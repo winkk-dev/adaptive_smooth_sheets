@@ -1,30 +1,121 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
+import 'package:example/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:example/main.dart';
-
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('launcher explains and opens the quick-view example', (
+    tester,
+  ) async {
+    _configureView(tester);
+    await tester.pumpWidget(const ExampleApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('Quick view'), findsOneWidget);
+    expect(find.text('Scroll-to-drag gesture handoff'), findsOneWidget);
+    expect(find.text('Reactive form'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.tap(find.text('Quick view'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Quick view'), findsWidgets);
+    expect(find.textContaining('This content remains mounted'), findsOneWidget);
+  });
+
+  testWidgets('reactive form shares validation state with its footer', (
+    tester,
+  ) async {
+    _configureView(tester);
+    await tester.pumpWidget(const ExampleApp());
+
+    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Reactive form'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Project brief'), findsOneWidget);
+    expect(find.text('Project name'), findsOneWidget);
+    expect(find.text('Project code'), findsOneWidget);
+    expect(find.text('Team size'), findsOneWidget);
+    expect(find.text('Budget (€k)'), findsOneWidget);
+    expect(find.text('After approval'), findsOneWidget);
+    expect(find.text('First-month success target'), findsOneWidget);
+    expect(find.text('Support contact'), findsOneWidget);
+    expect(find.text('Follow-up notes'), findsOneWidget);
+    expect(find.text('Save brief'), findsOneWidget);
+  });
+
+  testWidgets('selected tab survives an adaptive presentation change', (
+    tester,
+  ) async {
+    _configureView(tester);
+    await tester.pumpWidget(const ExampleApp());
+
+    await tester.tap(find.text('Tabs'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Notifications'), findsOneWidget);
+
+    tester.view.physicalSize = const Size(1200, 900);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Notifications'), findsOneWidget);
+  });
+
+  testWidgets('guarded close reports blocked dismissal attempts', (
+    tester,
+  ) async {
+    _configureView(tester);
+    await tester.pumpWidget(const ExampleApp());
+
+    await tester.drag(find.byType(ListView), const Offset(0, -200));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Guarded close'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Discard changes?'), findsOneWidget);
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(find.text('Guarded close'), findsWidgets);
+  });
+
+  testWidgets('navigation modal transitions forward and back between steps', (
+    tester,
+  ) async {
+    _configureView(tester);
+    await tester.pumpWidget(const ExampleApp());
+
+    await tester.tap(find.text('Navigation flow'));
+    await tester.pumpAndSettle();
+    expect(find.text('Step 1 of 3'), findsOneWidget);
+    expect(find.text('Choose a starting direction'), findsOneWidget);
+
+    await tester.tap(find.text('Continue'));
     await tester.pump();
+    expect(find.byType(SlideTransition), findsWidgets);
+    await tester.pumpAndSettle();
+    expect(find.text('Step 2 of 3'), findsOneWidget);
+    expect(find.text('Tune the interaction'), findsOneWidget);
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    tester.view.physicalSize = const Size(1200, 900);
+    await tester.pumpAndSettle();
+    expect(find.text('Step 2 of 3'), findsOneWidget);
+
+    await tester.tap(find.text('Back'));
+    await tester.pumpAndSettle();
+    expect(find.text('Step 1 of 3'), findsOneWidget);
+    expect(find.text('Choose a starting direction'), findsOneWidget);
+  });
+}
+
+void _configureView(WidgetTester tester) {
+  tester.view
+    ..devicePixelRatio = 1
+    ..physicalSize = const Size(500, 900);
+  addTearDown(() {
+    tester.view
+      ..resetPhysicalSize()
+      ..resetDevicePixelRatio();
   });
 }

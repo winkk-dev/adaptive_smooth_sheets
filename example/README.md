@@ -1,17 +1,27 @@
-# example
+# Adaptive Smooth Sheets example
 
-A new Flutter project.
+This application demonstrates a project-owned modal UI layer on top of
+`adaptive_smooth_sheets`. It intentionally imports only the adaptive package;
+the Smooth Sheets implementation stays behind the package boundary.
 
-## Getting Started
+Run it from this directory with:
 
-This project is a starting point for a Flutter application.
+```sh
+flutter run
+```
 
-A few resources to get you started if this is your first Flutter project:
+The launcher includes compact content, a lazy list, live state preservation,
+tabs, a multi-step nested navigation flow, guarded dismissal, global and
+per-route themes, and a long Reactive Forms modal. Resize the window across the
+configured 720 px breakpoint while a modal is open to switch between
+bottom-sheet and dialog presentation.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+The reusable application-side pieces are split into:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- `lib/modals/base_modal.dart` for project chrome and explicit body scrolling.
+- `lib/modals/base_tab_modal.dart` for the current concrete tab composition.
+- `lib/modals/base_modal_theme.dart` for application-only styling.
+- `lib/theme/app_theme.dart` for Material, package, and modal theme setup.
+
+The form and tab abstractions are deliberately modest. Their shared API will be
+revisited in the later “Simplify forms and tabs” task.

@@ -245,6 +245,28 @@ void main() {
     expect(contentRect.top, greaterThanOrEqualTo(40));
     expect(contentRect.bottom, lessThanOrEqualTo(800 - 300 - 24));
   });
+
+  testWidgets('adaptive pop scope can guard route dismissal', (tester) async {
+    _configureView(tester, size: const Size(500, 800));
+
+    await _pumpLauncher(
+      tester,
+      builder: (context) => const AdaptiveSheetPopScope<void>(
+        canPop: false,
+        child: SizedBox(
+          key: ValueKey('guarded-content'),
+          height: 180,
+          child: Text('Guarded content'),
+        ),
+      ),
+    );
+    await _openSheet(tester);
+
+    await tester.tapAt(const Offset(8, 8));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('guarded-content')), findsOneWidget);
+  });
 }
 
 void _configureView(

@@ -15,6 +15,8 @@ content element and its widget, form, and scroll state.
 - `AdaptiveSheetScope` for presentation-aware application chrome.
 - `AdaptiveSheetScaffold` for fixed top and bottom bars without importing
   `smooth_sheets` in application code.
+- `AdaptiveSheetPopScope` for sheet-aware dismissal guards without leaking the
+  underlying route implementation.
 
 ## Getting started
 
@@ -70,3 +72,7 @@ await showAdaptiveSheet<void>(
 
 Headers, footers, drag handles, buttons, content padding, forms, and other
 application-specific modal chrome intentionally remain consumer concerns.
+
+The [`example`](example/) application shows one way to build that consumer
+layer, including project-level modal chrome, tabs, lazy content, guarded
+dismissal, global and local theming, and a Reactive Forms modal.
