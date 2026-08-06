@@ -121,8 +121,7 @@ class ExampleHomePage extends StatelessWidget {
                     icon: Icons.shield_outlined,
                     title: 'Guarded close',
                     description: 'Intercept barrier, back, and sheet swipe',
-                    onPressed: () =>
-                        unawaited(showGuardedDismissModal(context)),
+                    onPressed: () => unawaited(showGuardedDismissModal(context)),
                   ),
                   _ExampleButton(
                     icon: Icons.palette_outlined,

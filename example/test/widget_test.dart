@@ -41,6 +41,17 @@ void main() {
     expect(find.text('Support contact'), findsOneWidget);
     expect(find.text('Follow-up notes'), findsOneWidget);
     expect(find.text('Save brief'), findsOneWidget);
+    expect(find.byTooltip('Back'), findsNothing);
+
+    await tester.ensureVisible(find.text('Project type'));
+    await tester.tap(find.text('Project type'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Mobile application').hitTestable(), findsOneWidget);
+    expect(find.byTooltip('Back'), findsNothing);
+
+    await tester.tap(find.text('Mobile application').hitTestable());
+    await tester.pumpAndSettle();
   });
 
   testWidgets('selected tab survives an adaptive presentation change', (
@@ -88,24 +99,36 @@ void main() {
 
     await tester.tap(find.text('Navigation flow'));
     await tester.pumpAndSettle();
-    expect(find.text('Step 1 of 3'), findsOneWidget);
+    expect(find.textContaining('Step 1 of 3'), findsOneWidget);
     expect(find.text('Choose a starting direction'), findsOneWidget);
+    expect(find.byTooltip('Back'), findsNothing);
 
     await tester.tap(find.text('Continue'));
-    await tester.pump();
-    expect(find.byType(SlideTransition), findsWidgets);
     await tester.pumpAndSettle();
-    expect(find.text('Step 2 of 3'), findsOneWidget);
+    expect(find.textContaining('Step 2 of 3'), findsOneWidget);
     expect(find.text('Tune the interaction'), findsOneWidget);
+    expect(find.byTooltip('Back'), findsOneWidget);
 
     tester.view.physicalSize = const Size(1200, 900);
     await tester.pumpAndSettle();
-    expect(find.text('Step 2 of 3'), findsOneWidget);
+    expect(find.textContaining('Step 2 of 3'), findsOneWidget);
 
-    await tester.tap(find.text('Back'));
+    await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
-    expect(find.text('Step 1 of 3'), findsOneWidget);
+    expect(find.textContaining('Step 1 of 3'), findsOneWidget);
     expect(find.text('Choose a starting direction'), findsOneWidget);
+
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Step 3 of 3'), findsOneWidget);
+    expect(find.text('Ready to finish'), findsOneWidget);
+
+    await tester.tap(find.text('Finish'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Step 3 of 3'), findsNothing);
+    expect(find.text('Navigation flow'), findsOneWidget);
   });
 }
 

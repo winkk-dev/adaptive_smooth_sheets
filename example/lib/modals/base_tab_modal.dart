@@ -37,9 +37,7 @@ class BaseTabModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final availableHeight =
-        MediaQuery.sizeOf(context).height -
-        MediaQuery.viewPaddingOf(context).vertical;
+    final availableHeight = MediaQuery.sizeOf(context).height - MediaQuery.viewPaddingOf(context).vertical;
     final bodyHeight = math.max(220.0, math.min(480.0, availableHeight * 0.56));
 
     return DefaultTabController(

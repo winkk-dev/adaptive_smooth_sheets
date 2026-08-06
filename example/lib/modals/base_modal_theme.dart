@@ -88,15 +88,12 @@ class BaseModalThemeData extends ThemeExtension<BaseModalThemeData> {
       dragHandleColor: dragHandleColor ?? this.dragHandleColor,
       dragHandleSize: dragHandleSize ?? this.dragHandleSize,
       dragHandlePadding: dragHandlePadding ?? this.dragHandlePadding,
-      headerBackgroundColor:
-          headerBackgroundColor ?? this.headerBackgroundColor,
-      headerForegroundColor:
-          headerForegroundColor ?? this.headerForegroundColor,
+      headerBackgroundColor: headerBackgroundColor ?? this.headerBackgroundColor,
+      headerForegroundColor: headerForegroundColor ?? this.headerForegroundColor,
       headerPadding: headerPadding ?? this.headerPadding,
       headerDivider: headerDivider ?? this.headerDivider,
       bodyPadding: bodyPadding ?? this.bodyPadding,
-      footerBackgroundColor:
-          footerBackgroundColor ?? this.footerBackgroundColor,
+      footerBackgroundColor: footerBackgroundColor ?? this.footerBackgroundColor,
       footerPadding: footerPadding ?? this.footerPadding,
       footerDivider: footerDivider ?? this.footerDivider,
     );

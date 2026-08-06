@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'adaptive_sheet_native_back_behavior.dart';
 import 'adaptive_sheet_presentation.dart';
 import 'adaptive_sheet_theme.dart';
 
@@ -33,6 +34,7 @@ class AdaptiveSheetConfig {
     this.swipeDismissible,
     this.useSafeArea,
     this.avoidKeyboardInset,
+    this.nativeBackBehavior,
     this.transitionDuration,
     this.transitionCurve,
   }) : assert(dialogWidth == null || dialogWidth > 0),
@@ -41,8 +43,7 @@ class AdaptiveSheetConfig {
          bottomSheetMinimumTopGap == null || bottomSheetMinimumTopGap >= 0,
        ),
        assert(
-         bottomSheetMinimumTopGapAfterSafeArea == null ||
-             bottomSheetMinimumTopGapAfterSafeArea >= 0,
+         bottomSheetMinimumTopGapAfterSafeArea == null || bottomSheetMinimumTopGapAfterSafeArea >= 0,
        ),
        assert(bottomSheetElevation == null || bottomSheetElevation >= 0),
        assert(dialogElevation == null || dialogElevation >= 0);
@@ -113,10 +114,16 @@ class AdaptiveSheetConfig {
   /// Overrides [AdaptiveSheetThemeData.avoidKeyboardInset].
   final bool? avoidKeyboardInset;
 
-  /// Overrides [AdaptiveSheetThemeData.transitionDuration].
+  /// Overrides [AdaptiveSheetThemeData.nativeBackBehavior].
+  ///
+  /// This value has no effect on web builds.
+  final AdaptiveSheetNativeBackBehavior? nativeBackBehavior;
+
+  /// Overrides the outer modal's
+  /// [AdaptiveSheetThemeData.transitionDuration].
   final Duration? transitionDuration;
 
-  /// Overrides [AdaptiveSheetThemeData.transitionCurve].
+  /// Overrides the outer modal's [AdaptiveSheetThemeData.transitionCurve].
   final Curve? transitionCurve;
 
   /// Applies this route's overrides to [baseTheme].
@@ -127,8 +134,7 @@ class AdaptiveSheetConfig {
       dialogMaxHeight: dialogMaxHeight,
       dialogMargin: dialogMargin,
       bottomSheetMinimumTopGap: bottomSheetMinimumTopGap,
-      bottomSheetMinimumTopGapAfterSafeArea:
-          bottomSheetMinimumTopGapAfterSafeArea,
+      bottomSheetMinimumTopGapAfterSafeArea: bottomSheetMinimumTopGapAfterSafeArea,
       bottomSheetBorderRadius: bottomSheetBorderRadius,
       dialogBorderRadius: dialogBorderRadius,
       bottomSheetElevation: bottomSheetElevation,
@@ -140,6 +146,7 @@ class AdaptiveSheetConfig {
       swipeDismissible: swipeDismissible,
       useSafeArea: useSafeArea,
       avoidKeyboardInset: avoidKeyboardInset,
+      nativeBackBehavior: nativeBackBehavior,
       transitionDuration: transitionDuration,
       transitionCurve: transitionCurve,
     );

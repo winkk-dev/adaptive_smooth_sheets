@@ -11,7 +11,69 @@ import 'base_tab_modal.dart';
 Future<void> showQuickViewModal(BuildContext context) {
   return showAdaptiveSheet<void>(
     context: context,
-    builder: (context) => BaseModal(
+    page: const AdaptiveSheetPage<void>(
+      child: _QuickViewModal(),
+    ),
+  );
+}
+
+/// Shows a lazy list to demonstrate scroll and sheet drag coordination.
+Future<void> showLazyListModal(BuildContext context) {
+  return showAdaptiveSheet<void>(
+    context: context,
+    page: const AdaptiveSheetPage<void>(child: _LazyListModal()),
+  );
+}
+
+/// Shows state that can be edited before and after live presentation changes.
+Future<void> showResizeStateModal(BuildContext context) {
+  return showAdaptiveSheet<void>(
+    context: context,
+    page: const AdaptiveSheetPage<void>(child: _ResizeStateModal()),
+  );
+}
+
+/// Shows a project-level tab modal.
+Future<void> showTabsModal(BuildContext context) {
+  return showAdaptiveSheet<void>(
+    context: context,
+    page: const AdaptiveSheetPage<void>(child: _TabsModal()),
+  );
+}
+
+/// Shows sheet-aware pop interception for barrier, back, and swipe attempts.
+Future<void> showGuardedDismissModal(BuildContext context) {
+  return showAdaptiveSheet<void>(
+    context: context,
+    page: const AdaptiveSheetPage<void>(child: _GuardedDismissModal()),
+  );
+}
+
+/// Shows local package and project-chrome overrides layered over global theme.
+Future<void> showLocallyThemedModal(BuildContext context) {
+  final colors = Theme.of(context).colorScheme;
+  return showAdaptiveSheet<void>(
+    context: context,
+    config: AdaptiveSheetConfig(
+      dialogWidth: 520,
+      dialogMaxHeight: 620,
+      surfaceColor: colors.tertiaryContainer,
+      barrierColor: colors.tertiary.withValues(alpha: 0.28),
+      bottomSheetBorderRadius: const BorderRadius.vertical(
+        top: Radius.circular(44),
+      ),
+      dialogBorderRadius: BorderRadius.circular(44),
+    ),
+    page: const AdaptiveSheetPage<void>(child: _LocallyThemedModal()),
+  );
+}
+
+class _QuickViewModal extends StatelessWidget {
+  const _QuickViewModal();
+
+  @override
+  Widget build(BuildContext context) {
+    return BaseModal(
       title: 'Quick view',
       subtitle: 'Short content uses its natural height',
       body: BaseModalBody(
@@ -32,36 +94,21 @@ Future<void> showQuickViewModal(BuildContext context) {
       footer: BaseModalFooter(
         actions: [
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: AdaptiveSheetNavigator.of(context).close,
             child: const Text('Done'),
           ),
         ],
       ),
-    ),
-  );
+    );
+  }
 }
 
-/// Shows a lazy list to demonstrate scroll and sheet drag coordination.
-Future<void> showLazyListModal(BuildContext context) {
-  return showAdaptiveSheet<void>(
-    context: context,
-    builder: (context) => const _LazyListModal(),
-  );
-}
+class _TabsModal extends StatelessWidget {
+  const _TabsModal();
 
-/// Shows state that can be edited before and after live presentation changes.
-Future<void> showResizeStateModal(BuildContext context) {
-  return showAdaptiveSheet<void>(
-    context: context,
-    builder: (context) => const _ResizeStateModal(),
-  );
-}
-
-/// Shows a project-level tab modal.
-Future<void> showTabsModal(BuildContext context) {
-  return showAdaptiveSheet<void>(
-    context: context,
-    builder: (context) => BaseTabModal(
+  @override
+  Widget build(BuildContext context) {
+    return BaseTabModal(
       title: 'Workspace',
       subtitle: 'Flutter tabs inside an adaptive route',
       tabs: const [
@@ -72,7 +119,7 @@ Future<void> showTabsModal(BuildContext context) {
       footer: BaseModalFooter(
         actions: [
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: AdaptiveSheetNavigator.of(context).close,
             child: const Text('Close'),
           ),
         ],
@@ -94,59 +141,42 @@ Future<void> showTabsModal(BuildContext context) {
         _ActivityTab(),
         _SettingsTab(),
       ],
-    ),
-  );
+    );
+  }
 }
 
-/// Shows sheet-aware pop interception for barrier, back, and swipe attempts.
-Future<void> showGuardedDismissModal(BuildContext context) {
-  return showAdaptiveSheet<void>(
-    context: context,
-    builder: (context) => const _GuardedDismissModal(),
-  );
-}
+class _LocallyThemedModal extends StatelessWidget {
+  const _LocallyThemedModal();
 
-/// Shows local package and project-chrome overrides layered over global theme.
-Future<void> showLocallyThemedModal(BuildContext context) {
-  final colors = Theme.of(context).colorScheme;
-  return showAdaptiveSheet<void>(
-    context: context,
-    config: AdaptiveSheetConfig(
-      dialogWidth: 520,
-      dialogMaxHeight: 620,
-      surfaceColor: colors.tertiaryContainer,
-      barrierColor: colors.tertiary.withValues(alpha: 0.28),
-      bottomSheetBorderRadius: const BorderRadius.vertical(
-        top: Radius.circular(44),
+  @override
+  Widget build(BuildContext context) {
+    final materialTheme = Theme.of(context);
+    final colors = materialTheme.colorScheme;
+    final localSurface = colors.tertiaryContainer;
+    final localForeground = colors.onTertiaryContainer;
+    final localChrome = BaseModalThemeData.of(context).copyWith(
+      dragHandleColor: localForeground.withValues(alpha: 0.4),
+      headerBackgroundColor: localSurface,
+      headerForegroundColor: localForeground,
+      headerDivider: BorderSide(
+        color: localForeground.withValues(alpha: 0.18),
       ),
-      dialogBorderRadius: BorderRadius.circular(44),
-    ),
-    builder: (context) {
-      final materialTheme = Theme.of(context);
-      final localSurface = colors.tertiaryContainer;
-      final localForeground = colors.onTertiaryContainer;
-      final localChrome = BaseModalThemeData.of(context).copyWith(
-        dragHandleColor: localForeground.withValues(alpha: 0.4),
-        headerBackgroundColor: localSurface,
-        headerForegroundColor: localForeground,
-        headerDivider: BorderSide(
-          color: localForeground.withValues(alpha: 0.18),
-        ),
-        footerBackgroundColor: localSurface,
-        footerDivider: BorderSide(
-          color: localForeground.withValues(alpha: 0.18),
-        ),
-      );
+      footerBackgroundColor: localSurface,
+      footerDivider: BorderSide(
+        color: localForeground.withValues(alpha: 0.18),
+      ),
+    );
 
-      return Theme(
-        data: materialTheme.copyWith(
-          extensions: [
-            for (final extension in materialTheme.extensions.values)
-              if (extension is! BaseModalThemeData) extension,
-            localChrome,
-          ],
-        ),
-        child: BaseModal(
+    return Theme(
+      data: materialTheme.copyWith(
+        extensions: [
+          for (final extension in materialTheme.extensions.values)
+            if (extension is! BaseModalThemeData) extension,
+          localChrome,
+        ],
+      ),
+      child: Builder(
+        builder: (context) => BaseModal(
           title: 'Local theme',
           subtitle: 'One route overrides global package defaults',
           body: BaseModalBody(
@@ -167,15 +197,15 @@ Future<void> showLocallyThemedModal(BuildContext context) {
           footer: BaseModalFooter(
             actions: [
               FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: AdaptiveSheetNavigator.of(context).close,
                 child: const Text('Nice'),
               ),
             ],
           ),
         ),
-      );
-    },
-  );
+      ),
+    );
+  }
 }
 
 class _PresentationBadge extends StatelessWidget {
@@ -190,9 +220,7 @@ class _PresentationBadge extends StatelessWidget {
     };
     return Chip(
       avatar: Icon(
-        presentation == AdaptiveSheetPresentation.bottomSheet
-            ? Icons.vertical_align_bottom
-            : Icons.web_asset_outlined,
+        presentation == AdaptiveSheetPresentation.bottomSheet ? Icons.vertical_align_bottom : Icons.web_asset_outlined,
       ),
       label: Text(label),
     );
@@ -256,7 +284,7 @@ class _LazyListModalState extends State<_LazyListModal> {
             label: const Text('Top'),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: AdaptiveSheetNavigator.of(context).close,
             child: const Text('Close'),
           ),
         ],
@@ -312,7 +340,7 @@ class _ResizeStateModalState extends State<_ResizeStateModal> {
       footer: BaseModalFooter(
         actions: [
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: AdaptiveSheetNavigator.of(context).close,
             child: const Text('Done'),
           ),
         ],
@@ -390,7 +418,7 @@ class _GuardedDismissModalState extends State<_GuardedDismissModal> {
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        Navigator.of(context).pop();
+        AdaptiveSheetNavigator.of(context).close();
       }
     });
   }
@@ -445,7 +473,7 @@ class _GuardedDismissModalState extends State<_GuardedDismissModal> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Try the close button, system back, modal barrier, or a '
+                'Try the close button, native device Back, modal barrier, or a '
                 'downward swipe. Unsaved state intercepts every route pop.',
               ),
               const SizedBox(height: 16),
@@ -463,9 +491,7 @@ class _GuardedDismissModalState extends State<_GuardedDismissModal> {
         footer: BaseModalFooter(
           actions: [
             OutlinedButton(
-              onPressed: _hasUnsavedChanges
-                  ? _confirmDiscard
-                  : () => Navigator.of(context).maybePop(),
+              onPressed: _hasUnsavedChanges ? _confirmDiscard : AdaptiveSheetNavigator.of(context).close,
               child: const Text('Discard'),
             ),
             FilledButton(

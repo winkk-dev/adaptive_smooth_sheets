@@ -11,7 +11,7 @@ import 'base_modal.dart';
 Future<void> showExampleFormModal(BuildContext context) {
   return showAdaptiveSheet<void>(
     context: context,
-    builder: (context) => const ExampleFormModal(),
+    page: const AdaptiveSheetPage<void>(child: ExampleFormModal()),
   );
 }
 
@@ -87,7 +87,7 @@ class _ExampleFormModalState extends State<ExampleFormModal> {
     }
 
     final messenger = ScaffoldMessenger.of(context);
-    Navigator.of(context).pop();
+    AdaptiveSheetNavigator.of(context).close();
     messenger.showSnackBar(
       const SnackBar(content: Text('Project brief saved.')),
     );
@@ -113,8 +113,7 @@ class _ExampleFormModalState extends State<ExampleFormModal> {
                 ),
                 validationMessages: {
                   ValidationMessage.required: (_) => 'A name is required.',
-                  ValidationMessage.minLength: (_) =>
-                      'Use at least three characters.',
+                  ValidationMessage.minLength: (_) => 'Use at least three characters.',
                 },
               ),
               const SizedBox(height: 16),
@@ -128,8 +127,7 @@ class _ExampleFormModalState extends State<ExampleFormModal> {
                 ),
                 validationMessages: {
                   ValidationMessage.required: (_) => 'A code is required.',
-                  ValidationMessage.minLength: (_) =>
-                      'Use at least two characters.',
+                  ValidationMessage.minLength: (_) => 'Use at least two characters.',
                 },
               ),
               const SizedBox(height: 16),
@@ -160,10 +158,8 @@ class _ExampleFormModalState extends State<ExampleFormModal> {
                         prefixIcon: Icon(Icons.groups_outlined),
                       ),
                       validationMessages: {
-                        ValidationMessage.required: (_) =>
-                            'Enter the team size.',
-                        ValidationMessage.min: (_) =>
-                            'At least one person is required.',
+                        ValidationMessage.required: (_) => 'Enter the team size.',
+                        ValidationMessage.min: (_) => 'At least one person is required.',
                       },
                     ),
                   ),
@@ -178,10 +174,8 @@ class _ExampleFormModalState extends State<ExampleFormModal> {
                         prefixIcon: Icon(Icons.account_balance_wallet_outlined),
                       ),
                       validationMessages: {
-                        ValidationMessage.required: (_) =>
-                            'Enter the monthly budget.',
-                        ValidationMessage.min: (_) =>
-                            'Use a value greater than zero.',
+                        ValidationMessage.required: (_) => 'Enter the monthly budget.',
+                        ValidationMessage.min: (_) => 'Use a value greater than zero.',
                       },
                     ),
                   ),
@@ -226,8 +220,7 @@ class _ExampleFormModalState extends State<ExampleFormModal> {
                 ),
                 validationMessages: {
                   ValidationMessage.required: (_) => 'Add a short summary.',
-                  ValidationMessage.maxLength: (_) =>
-                      'Keep the summary under 240 characters.',
+                  ValidationMessage.maxLength: (_) => 'Keep the summary under 240 characters.',
                 },
               ),
               const SizedBox(height: 20),
@@ -275,8 +268,7 @@ class _ExampleFormModalState extends State<ExampleFormModal> {
                 ),
                 validationMessages: {
                   ValidationMessage.required: (_) => 'Enter a target.',
-                  ValidationMessage.min: (_) =>
-                      'Use a value greater than zero.',
+                  ValidationMessage.min: (_) => 'Use a value greater than zero.',
                 },
               ),
               const SizedBox(height: 16),
@@ -313,9 +305,7 @@ class _ExampleFormModalState extends State<ExampleFormModal> {
         footer: BaseModalFooter(
           actions: [
             OutlinedButton(
-              onPressed: _isSubmitting
-                  ? null
-                  : () => Navigator.of(context).maybePop(),
+              onPressed: _isSubmitting ? null : AdaptiveSheetNavigator.of(context).close,
               child: const Text('Cancel'),
             ),
             ReactiveFormConsumer(

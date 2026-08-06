@@ -1,31 +1,41 @@
+import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
 
 import 'adaptive_sheet_config.dart';
+import 'adaptive_sheet_native_back_behavior.dart';
+import 'adaptive_sheet_page.dart';
 import 'adaptive_sheet_presentation.dart';
 import 'adaptive_sheet_scope.dart';
 import 'adaptive_sheet_theme.dart';
 
-/// Shows a modal that adapts between a bottom sheet and a dialog.
+part 'adaptive_sheet_navigator.dart';
+part 'adaptive_sheet_pop_scope.dart';
+
+/// Shows a modal containing one initial [AdaptiveSheetPage].
 ///
 /// Presentation is resolved inside the route, so an already-open modal reacts
-/// when its window crosses the configured breakpoint. The element built by
-/// [builder] is preserved while it moves between presentation surfaces.
+/// when its window crosses the configured breakpoint. Push more pages through
+/// [AdaptiveSheetNavigator] from a context below [page].
+///
+/// The returned future completes with the value passed to
+/// [AdaptiveSheetNavigator.close], or null when the modal is dismissed without
+/// a result.
 Future<T?> showAdaptiveSheet<T>({
   required BuildContext context,
-  required WidgetBuilder builder,
+  required AdaptiveSheetPage<T> page,
   AdaptiveSheetConfig config = const AdaptiveSheetConfig(),
 }) {
   final theme = config.resolveTheme(AdaptiveSheetThemeData.of(context));
   final route = _AdaptiveSheetRoute<T>(
     config: config,
     theme: theme,
-    builder: builder,
-    barrierLabel:
-        config.barrierLabel ??
-        MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    page: page,
+    barrierLabel: config.barrierLabel ?? MaterialLocalizations.of(context).modalBarrierDismissLabel,
   );
 
   return Navigator.of(
@@ -38,7 +48,7 @@ class _AdaptiveSheetRoute<T> extends ModalSheetRoute<T> {
   _AdaptiveSheetRoute({
     required this.config,
     required this.theme,
-    required WidgetBuilder builder,
+    required AdaptiveSheetPage<T> page,
     required String barrierLabel,
   }) : super(
          settings: config.routeSettings,
@@ -49,20 +59,17 @@ class _AdaptiveSheetRoute<T> extends ModalSheetRoute<T> {
          swipeDismissible: theme.swipeDismissible,
          transitionDuration: theme.transitionDuration,
          transitionCurve: theme.transitionCurve,
+         barrierBuilder: _buildAdaptiveSheetBarrier,
          viewportBuilder: (context, child) {
            final presentation = config.presentationPolicy.resolve(
              context,
              fallbackDialogBreakpoint: theme.dialogBreakpoint,
            );
-           final topSafeArea = theme.useSafeArea
-               ? MediaQuery.viewPaddingOf(context).top
-               : 0.0;
+           final topSafeArea = theme.useSafeArea ? MediaQuery.viewPaddingOf(context).top : 0.0;
            final topPadding = switch (presentation) {
              AdaptiveSheetPresentation.dialog => 0.0,
-             AdaptiveSheetPresentation.bottomSheet when topSafeArea > 0 =>
-               topSafeArea + theme.bottomSheetMinimumTopGapAfterSafeArea,
-             AdaptiveSheetPresentation.bottomSheet =>
-               theme.bottomSheetMinimumTopGap,
+             AdaptiveSheetPresentation.bottomSheet when topSafeArea > 0 => topSafeArea + theme.bottomSheetMinimumTopGapAfterSafeArea,
+             AdaptiveSheetPresentation.bottomSheet => theme.bottomSheetMinimumTopGap,
            };
 
            return SheetViewport(
@@ -70,12 +77,28 @@ class _AdaptiveSheetRoute<T> extends ModalSheetRoute<T> {
              child: child,
            );
          },
-         builder: (context) =>
-             _AdaptiveSheet(config: config, theme: theme, builder: builder),
+         builder: (context) => _AdaptiveSheet<T>(
+           config: config,
+           theme: theme,
+           page: page,
+         ),
        );
 
   final AdaptiveSheetConfig config;
   final AdaptiveSheetThemeData theme;
+  VoidCallback? _closeFromBarrier;
+  bool Function()? _canClose;
+
+  @override
+  RoutePopDisposition get popDisposition {
+    // A system-back PopScope can block the outer route while an internal page
+    // is active. Smooth Sheets owns swipe dismissal separately, so let an
+    // allowed swipe finish without mutating pop scopes during its drag.
+    if ((navigator?.userGestureInProgress ?? false) && (_canClose?.call() ?? true)) {
+      return RoutePopDisposition.pop;
+    }
+    return super.popDisposition;
+  }
 
   AdaptiveSheetPresentation _presentationOf(BuildContext context) {
     return config.presentationPolicy.resolve(
@@ -115,25 +138,85 @@ class _AdaptiveSheetRoute<T> extends ModalSheetRoute<T> {
   }
 }
 
-class _AdaptiveSheet extends StatefulWidget {
+Widget _buildAdaptiveSheetBarrier<T>(
+  ModalRoute<T> modalRoute,
+  VoidCallback defaultOnDismiss,
+) {
+  final route = modalRoute as _AdaptiveSheetRoute<T>;
+
+  void onDismiss() {
+    if (route.animation!.isCompleted && !route.navigator!.userGestureInProgress) {
+      route._closeFromBarrier?.call();
+    }
+  }
+
+  final barrierColor = route.barrierColor;
+  if (barrierColor != null && barrierColor.a != 0 && !route.offstage) {
+    return AnimatedModalBarrier(
+      onDismiss: onDismiss,
+      dismissible: route.barrierDismissible,
+      semanticsLabel: route.barrierLabel,
+      barrierSemanticsDismissible: route.semanticsDismissible,
+      color: route.sheetVisibility.drive(
+        ColorTween(
+          begin: barrierColor.withValues(alpha: 0),
+          end: barrierColor,
+        ),
+      ),
+    );
+  }
+
+  return ModalBarrier(
+    onDismiss: onDismiss,
+    dismissible: route.barrierDismissible,
+    semanticsLabel: route.barrierLabel,
+    barrierSemanticsDismissible: route.semanticsDismissible,
+  );
+}
+
+class _AdaptiveSheet<T> extends StatefulWidget {
   const _AdaptiveSheet({
     required this.config,
     required this.theme,
-    required this.builder,
+    required this.page,
   });
 
   final AdaptiveSheetConfig config;
   final AdaptiveSheetThemeData theme;
-  final WidgetBuilder builder;
+  final AdaptiveSheetPage<T> page;
 
   @override
-  State<_AdaptiveSheet> createState() => _AdaptiveSheetState();
+  State<_AdaptiveSheet<T>> createState() => _AdaptiveSheetState<T>();
 }
 
-class _AdaptiveSheetState extends State<_AdaptiveSheet> {
-  // A global key lets Flutter move the existing content element between the
-  // two surface trees instead of recreating state, scroll positions, or forms.
-  final GlobalKey _contentKey = GlobalKey(debugLabel: 'adaptive-sheet-content');
+class _AdaptiveSheetState<T> extends State<_AdaptiveSheet<T>> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>(
+    debugLabel: 'adaptive-sheet-navigator',
+  );
+  AdaptiveSheetNavigator? _sheetNavigator;
+  _AdaptiveSheetRoute<T>? _outerRoute;
+
+  AdaptiveSheetNavigator get _navigator {
+    return _sheetNavigator ??= AdaptiveSheetNavigator._(
+      navigatorKey: _navigatorKey,
+      forceCloseSheet: <R>(R? result) {
+        Navigator.of(context).pop<R>(result);
+      },
+    );
+  }
+
+  void _closeFromBarrier() {
+    _navigator.close();
+  }
+
+  @override
+  void dispose() {
+    _outerRoute
+      ?.._closeFromBarrier = null
+      .._canClose = null;
+    _sheetNavigator?._dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -142,32 +225,29 @@ class _AdaptiveSheetState extends State<_AdaptiveSheet> {
       fallbackDialogBreakpoint: widget.theme.dialogBreakpoint,
     );
     final isBottomSheet = presentation == AdaptiveSheetPresentation.bottomSheet;
+    final sheetNavigator = _navigator;
+    final outerRoute = ModalRoute.of(context)! as _AdaptiveSheetRoute<T>;
+    _outerRoute = outerRoute
+      .._closeFromBarrier = _closeFromBarrier
+      .._canClose = (() => sheetNavigator._canClose);
+    final safePadding = isBottomSheet && widget.theme.useSafeArea ? MediaQuery.paddingOf(context) : EdgeInsets.zero;
+    final keyboardBottom = isBottomSheet && widget.theme.avoidKeyboardInset ? MediaQuery.viewInsetsOf(context).bottom : 0.0;
 
-    Widget content = AdaptiveSheetScope(
-      presentation: presentation,
-      theme: widget.theme,
-      child: KeyedSubtree(
-        key: _contentKey,
-        child: Builder(builder: widget.builder),
-      ),
+    final navigator = Navigator(
+      key: _navigatorKey,
+      observers: [sheetNavigator._observer],
+      onGenerateInitialRoutes: (navigator, initialRoute) => [
+        _buildPageRoute<T>(widget.page),
+      ],
     );
 
-    if (isBottomSheet && widget.theme.useSafeArea) {
-      content = SafeArea(top: false, child: content);
-    }
-
-    return Sheet(
-      scrollConfiguration: isBottomSheet
-          ? const SheetScrollConfiguration(
-              scrollSyncMode: SheetScrollHandlingBehavior.onlyFromTop,
-            )
-          : SheetScrollConfiguration.disabled,
-      dragConfiguration: isBottomSheet && widget.theme.enableDrag
-          ? const SheetDragConfiguration()
-          : SheetDragConfiguration.disabled,
-      padding: isBottomSheet && widget.theme.avoidKeyboardInset
-          ? EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom)
-          : EdgeInsets.zero,
+    final pagedSheet = PagedSheet(
+      padding: EdgeInsets.fromLTRB(
+        safePadding.left,
+        0,
+        safePadding.right,
+        safePadding.bottom + keyboardBottom,
+      ),
       decoration: isBottomSheet
           ? MaterialSheetDecoration(
               size: SheetSize.fit,
@@ -176,18 +256,164 @@ class _AdaptiveSheetState extends State<_AdaptiveSheet> {
               borderRadius: widget.theme.bottomSheetBorderRadius,
               clipBehavior: Clip.antiAlias,
             )
-          : const SheetDecorationBuilder(
+          : const MaterialSheetDecoration(
               size: SheetSize.stretch,
-              builder: _buildUndecoratedSheet,
+              type: MaterialType.transparency,
             ),
-      child: isBottomSheet
-          ? content
-          : _AdaptiveDialogSurface(theme: widget.theme, child: content),
+      navigator: navigator,
+    );
+
+    final routeTheme = PagedSheetRouteThemeData(
+      scrollConfiguration: isBottomSheet
+          ? const SheetScrollConfiguration(
+              scrollSyncMode: SheetScrollHandlingBehavior.onlyFromTop,
+            )
+          : SheetScrollConfiguration.disabled,
+      dragConfiguration: isBottomSheet && widget.theme.enableDrag
+          ? const SheetDragConfiguration()
+          : const SheetDragConfiguration(
+              hitTestBehavior: HitTestBehavior.deferToChild,
+              deviceKinds: {},
+            ),
+    );
+
+    return AdaptiveSheetScope(
+      presentation: presentation,
+      theme: widget.theme,
+      child: _AdaptiveSheetNavigatorScope(
+        sheetNavigator: sheetNavigator,
+        child: ListenableBuilder(
+          listenable: sheetNavigator._changes,
+          child: PagedSheetRouteTheme(
+            data: routeTheme,
+            child: pagedSheet,
+          ),
+          builder: (context, child) {
+            final handlesNativeBack =
+                !kIsWeb && widget.theme.nativeBackBehavior == AdaptiveSheetNativeBackBehavior.popPageOrCloseSheet && sheetNavigator._canPopAnyRoute;
+            sheetNavigator._isHandlingNativeBack = handlesNativeBack;
+
+            return PopScope<dynamic>(
+              canPop: !handlesNativeBack,
+              onPopInvokedWithResult: (didPop, result) {
+                if (!didPop && handlesNativeBack) {
+                  sheetNavigator._popTopRoute();
+                }
+              },
+              child: SheetPopScope<dynamic>(
+                canPop: sheetNavigator._canClose,
+                onPopInvokedWithResult: sheetNavigator._outerPopCallback,
+                child: child!,
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }
 
-Widget _buildUndecoratedSheet(BuildContext context, Widget child) => child;
+PagedSheetRoute<T> _buildPageRoute<T>(AdaptiveSheetPage<T> page) {
+  late final _AdaptivePagedSheetRoute<T> route;
+  route = _AdaptivePagedSheetRoute<T>(
+    settings: page.settings,
+    maintainState: page.maintainState,
+    builder: (context) => _AdaptiveSheetPageRouteScope(
+      route: route,
+      child: _AdaptiveSheetPageSurface(child: page.child),
+    ),
+  );
+  return route;
+}
+
+/// Identifies routes created from [AdaptiveSheetPage] among temporary popup
+/// routes pushed onto the same nested Navigator.
+class _AdaptivePagedSheetRoute<T> extends PagedSheetRoute<T> {
+  _AdaptivePagedSheetRoute({
+    required super.builder,
+    super.settings,
+    super.maintainState,
+  });
+}
+
+class _AdaptiveSheetPageRouteScope extends InheritedWidget {
+  const _AdaptiveSheetPageRouteScope({
+    required this.route,
+    required super.child,
+  });
+
+  final Route<dynamic> route;
+
+  static Route<dynamic>? maybeOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<_AdaptiveSheetPageRouteScope>()?.route;
+  }
+
+  @override
+  bool updateShouldNotify(_AdaptiveSheetPageRouteScope oldWidget) {
+    return route != oldWidget.route;
+  }
+}
+
+class _AdaptiveSheetPageSurface extends StatefulWidget {
+  const _AdaptiveSheetPageSurface({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_AdaptiveSheetPageSurface> createState() => _AdaptiveSheetPageSurfaceState();
+}
+
+class _AdaptiveSheetPageSurfaceState extends State<_AdaptiveSheetPageSurface> {
+  final GlobalKey _contentKey = GlobalKey(
+    debugLabel: 'adaptive-sheet-page-content',
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = AdaptiveSheetScope.of(context);
+    final content = SizedBox(
+      width: double.infinity,
+      child: KeyedSubtree(
+        key: _contentKey,
+        child: _AdaptiveSheetDismissShortcuts(child: widget.child),
+      ),
+    );
+
+    if (scope.presentation == AdaptiveSheetPresentation.bottomSheet) {
+      return content;
+    }
+
+    return _AdaptiveDialogSurface(theme: scope.theme, child: content);
+  }
+}
+
+class _AdaptiveSheetDismissShortcuts extends StatelessWidget {
+  const _AdaptiveSheetDismissShortcuts({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Shortcuts(
+      shortcuts: {
+        SingleActivator(LogicalKeyboardKey.escape): const DismissIntent(),
+      },
+      child: Actions(
+        actions: {
+          DismissIntent: CallbackAction<DismissIntent>(
+            onInvoke: (_) {
+              AdaptiveSheetNavigator.of(context).close();
+              return null;
+            },
+          ),
+        },
+        // Give the page an active focus scope for Escape without winning the
+        // autofocus race against a descendant form field.
+        child: FocusScope(autofocus: true, child: child),
+      ),
+    );
+  }
+}
 
 class _AdaptiveDialogSurface extends StatelessWidget {
   const _AdaptiveDialogSurface({required this.theme, required this.child});
@@ -197,12 +423,8 @@ class _AdaptiveDialogSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final viewPadding = theme.useSafeArea
-        ? MediaQuery.viewPaddingOf(context)
-        : EdgeInsets.zero;
-    final keyboardBottom = theme.avoidKeyboardInset
-        ? MediaQuery.viewInsetsOf(context).bottom
-        : 0.0;
+    final viewPadding = theme.useSafeArea ? MediaQuery.viewPaddingOf(context) : EdgeInsets.zero;
+    final keyboardBottom = theme.avoidKeyboardInset ? MediaQuery.viewInsetsOf(context).bottom : 0.0;
     final margin = EdgeInsets.fromLTRB(
       math.max(theme.dialogMargin.left, viewPadding.left),
       math.max(theme.dialogMargin.top, viewPadding.top),
@@ -213,24 +435,36 @@ class _AdaptiveDialogSurface extends StatelessWidget {
       ),
     );
 
-    return Padding(
-      padding: margin,
-      child: Center(
-        child: SizedBox(
-          width: theme.dialogWidth,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: theme.dialogMaxHeight),
-            child: Material(
-              elevation: theme.dialogElevation,
-              color:
-                  theme.surfaceColor ?? Theme.of(context).colorScheme.surface,
-              borderRadius: theme.dialogBorderRadius,
-              clipBehavior: Clip.antiAlias,
-              child: child,
+    final outsideSurface = theme.barrierDismissible
+        ? GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            excludeFromSemantics: true,
+            onTap: AdaptiveSheetNavigator.of(context).close,
+          )
+        : const AbsorbPointer();
+
+    return Stack(
+      children: [
+        Positioned.fill(child: outsideSurface),
+        Padding(
+          padding: margin,
+          child: Center(
+            child: SizedBox(
+              width: theme.dialogWidth,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: theme.dialogMaxHeight),
+                child: Material(
+                  elevation: theme.dialogElevation,
+                  color: theme.surfaceColor ?? Theme.of(context).colorScheme.surface,
+                  borderRadius: theme.dialogBorderRadius,
+                  clipBehavior: Clip.antiAlias,
+                  child: child,
+                ),
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

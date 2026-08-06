@@ -1,170 +1,81 @@
-import 'dart:math' as math;
+import 'dart:async';
 
 import 'package:adaptive_smooth_sheets/adaptive_smooth_sheets.dart';
 import 'package:flutter/material.dart';
 
 import 'base_modal.dart';
 
-/// Shows a multi-step flow backed by a nested Navigator.
+/// Shows a three-page flow using the package-owned sheet navigator.
 Future<void> showNavigationModal(BuildContext context) {
   return showAdaptiveSheet<void>(
     context: context,
-    builder: (context) => const NavigationModal(),
+    page: const AdaptiveSheetPage<void>(
+      settings: RouteSettings(name: 'direction'),
+      child: _DirectionPage(),
+    ),
   );
 }
 
-/// A three-step modal that keeps its own navigation history.
-class NavigationModal extends StatefulWidget {
-  /// Creates the navigation modal example.
-  const NavigationModal({super.key});
+class _DirectionPage extends StatefulWidget {
+  const _DirectionPage();
 
   @override
-  State<NavigationModal> createState() => _NavigationModalState();
+  State<_DirectionPage> createState() => _DirectionPageState();
 }
 
-class _NavigationModalState extends State<NavigationModal> {
-  static const _stepTitles = ['Choose direction', 'Tune behavior', 'Review'];
-  final _navigatorKey = GlobalKey<NavigatorState>();
-  var _step = 0;
-
-  void _next() {
-    if (_step == _stepTitles.length - 1) {
-      Navigator.of(context).pop();
-      return;
-    }
-
-    final nextStep = _step + 1;
-    setState(() => _step = nextStep);
-    _navigatorKey.currentState!.push(_routeFor(nextStep));
-  }
-
-  void _back() {
-    if (_step == 0) {
-      return;
-    }
-
-    setState(() => _step -= 1);
-    _navigatorKey.currentState!.pop();
-  }
-
-  PageRoute<void> _routeFor(int step) {
-    return PageRouteBuilder<void>(
-      settings: RouteSettings(name: 'navigation-step-${step + 1}'),
-      transitionDuration: const Duration(milliseconds: 300),
-      reverseTransitionDuration: const Duration(milliseconds: 240),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return switch (step) {
-          0 => const _DirectionStep(),
-          1 => const _BehaviorStep(),
-          _ => const _ReviewStep(),
-        };
-      },
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        final curvedAnimation = CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-          reverseCurve: Curves.easeInCubic,
-        );
-        return FadeTransition(
-          opacity: curvedAnimation,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0.12, 0),
-              end: Offset.zero,
-            ).animate(curvedAnimation),
-            child: child,
-          ),
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final availableHeight =
-        MediaQuery.sizeOf(context).height -
-        MediaQuery.viewPaddingOf(context).vertical;
-    final bodyHeight = math.max(320.0, math.min(480.0, availableHeight * 0.54));
-
-    return BaseModal(
-      title: _stepTitles[_step],
-      subtitle: 'Step ${_step + 1} of ${_stepTitles.length}',
-      leading: _step == 0
-          ? null
-          : IconButton(
-              onPressed: _back,
-              tooltip: 'Previous step',
-              icon: const Icon(Icons.arrow_back),
-            ),
-      body: SizedBox(
-        height: bodyHeight,
-        child: NavigatorPopHandler<void>(
-          onPopWithResult: (_) => _back(),
-          child: Navigator(
-            key: _navigatorKey,
-            onGenerateRoute: (settings) => _routeFor(0),
-          ),
-        ),
-      ),
-      footer: BaseModalFooter(
-        actions: [
-          if (_step > 0)
-            OutlinedButton(onPressed: _back, child: const Text('Back')),
-          FilledButton.icon(
-            onPressed: _next,
-            icon: Icon(
-              _step == _stepTitles.length - 1
-                  ? Icons.check
-                  : Icons.arrow_forward,
-            ),
-            label: Text(
-              _step == _stepTitles.length - 1 ? 'Finish' : 'Continue',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DirectionStep extends StatefulWidget {
-  const _DirectionStep();
-
-  @override
-  State<_DirectionStep> createState() => _DirectionStepState();
-}
-
-class _DirectionStepState extends State<_DirectionStep> {
+class _DirectionPageState extends State<_DirectionPage> {
   var _selection = 0;
 
   @override
   Widget build(BuildContext context) {
-    return BaseModalBody(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const _StepIcon(icon: Icons.route_outlined),
-          const SizedBox(height: 20),
-          Text(
-            'Choose a starting direction',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Each step is a route in a nested Navigator. Its local widget '
-            'state remains alive when you move forward and then return.',
-          ),
-          const SizedBox(height: 24),
-          SegmentedButton<int>(
-            segments: const [
-              ButtonSegment(value: 0, label: Text('Mobile')),
-              ButtonSegment(value: 1, label: Text('Desktop')),
-              ButtonSegment(value: 2, label: Text('Both')),
-            ],
-            selected: {_selection},
-            onSelectionChanged: (selection) {
-              setState(() => _selection = selection.single);
+    final sheetNavigator = AdaptiveSheetNavigator.of(context);
+    return BaseModal(
+      title: 'Choose direction',
+      subtitle: 'Step 1 of 3',
+      body: BaseModalBody(
+        child: Column(
+          key: const ValueKey('navigation-step-1'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _StepIcon(icon: Icons.route_outlined),
+            const SizedBox(height: 20),
+            Text(
+              'Choose a starting direction',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Each step is an AdaptiveSheetPage. Smooth Sheets owns the '
+              'route transition and keeps previous page state mounted.',
+            ),
+            const SizedBox(height: 24),
+            SegmentedButton<int>(
+              segments: const [
+                ButtonSegment(value: 0, label: Text('Mobile')),
+                ButtonSegment(value: 1, label: Text('Desktop')),
+                ButtonSegment(value: 2, label: Text('Both')),
+              ],
+              selected: {_selection},
+              onSelectionChanged: (selection) {
+                setState(() => _selection = selection.single);
+              },
+            ),
+          ],
+        ),
+      ),
+      footer: BaseModalFooter(
+        actions: [
+          FilledButton.icon(
+            onPressed: () {
+              sheetNavigator.push<void>(
+                const AdaptiveSheetPage<void>(
+                  settings: RouteSettings(name: 'behavior'),
+                  child: _BehaviorPage(),
+                ),
+              );
             },
+            icon: const Icon(Icons.arrow_forward),
+            label: const Text('Continue'),
           ),
         ],
       ),
@@ -172,45 +83,71 @@ class _DirectionStepState extends State<_DirectionStep> {
   }
 }
 
-class _BehaviorStep extends StatefulWidget {
-  const _BehaviorStep();
+class _BehaviorPage extends StatefulWidget {
+  const _BehaviorPage();
 
   @override
-  State<_BehaviorStep> createState() => _BehaviorStepState();
+  State<_BehaviorPage> createState() => _BehaviorPageState();
 }
 
-class _BehaviorStepState extends State<_BehaviorStep> {
+class _BehaviorPageState extends State<_BehaviorPage> {
   var _sendReminder = true;
   var _automationLevel = 0.6;
 
   @override
   Widget build(BuildContext context) {
-    return BaseModalBody(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const _StepIcon(icon: Icons.tune),
-          const SizedBox(height: 20),
-          Text(
-            'Tune the interaction',
-            style: Theme.of(context).textTheme.titleLarge,
+    final sheetNavigator = AdaptiveSheetNavigator.of(context);
+    return BaseModal(
+      title: 'Tune behavior',
+      subtitle: 'Step 2 of 3',
+      body: BaseModalBody(
+        child: Column(
+          key: const ValueKey('navigation-step-2'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _StepIcon(icon: Icons.tune),
+            const SizedBox(height: 20),
+            Text(
+              'Tune the interaction',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'The project BaseModal reads canPop and supplies its back button '
+              'without owning a Navigator or transition controller.',
+            ),
+            const SizedBox(height: 20),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _sendReminder,
+              onChanged: (value) => setState(() => _sendReminder = value),
+              title: const Text('Send a completion reminder'),
+            ),
+            Text('Automation level: ${(_automationLevel * 100).round()}%'),
+            Slider(
+              value: _automationLevel,
+              onChanged: (value) => setState(() => _automationLevel = value),
+            ),
+          ],
+        ),
+      ),
+      footer: BaseModalFooter(
+        actions: [
+          OutlinedButton(
+            onPressed: sheetNavigator.pop,
+            child: const Text('Back'),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Use system back or the header back action to reverse the inner '
-            'route before dismissing the outer modal.',
-          ),
-          const SizedBox(height: 20),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            value: _sendReminder,
-            onChanged: (value) => setState(() => _sendReminder = value),
-            title: const Text('Send a completion reminder'),
-          ),
-          Text('Automation level: ${(_automationLevel * 100).round()}%'),
-          Slider(
-            value: _automationLevel,
-            onChanged: (value) => setState(() => _automationLevel = value),
+          FilledButton.icon(
+            onPressed: () async {
+              await sheetNavigator.push<void>(
+                const AdaptiveSheetPage<void>(
+                  settings: RouteSettings(name: 'review'),
+                  child: _ReviewPage(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.arrow_forward),
+            label: const Text('Continue'),
           ),
         ],
       ),
@@ -218,33 +155,52 @@ class _BehaviorStepState extends State<_BehaviorStep> {
   }
 }
 
-class _ReviewStep extends StatelessWidget {
-  const _ReviewStep();
+class _ReviewPage extends StatelessWidget {
+  const _ReviewPage();
 
   @override
   Widget build(BuildContext context) {
-    return BaseModalBody(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const _StepIcon(icon: Icons.task_alt),
-          const SizedBox(height: 20),
-          Text(
-            'Ready to finish',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'The adaptive sheet stayed open while the nested Navigator '
-            'animated between three independent routes.',
-          ),
-          const SizedBox(height: 24),
-          const Card(
-            child: ListTile(
-              leading: Icon(Icons.layers_outlined),
-              title: Text('Three route stack'),
-              subtitle: Text('Forward, reverse, and system-back navigation'),
+    final sheetNavigator = AdaptiveSheetNavigator.of(context);
+    return BaseModal(
+      title: 'Review',
+      subtitle: 'Step 3 of 3',
+      body: BaseModalBody(
+        child: Column(
+          key: const ValueKey('navigation-step-3'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _StepIcon(icon: Icons.task_alt),
+            const SizedBox(height: 20),
+            Text(
+              'Ready to finish',
+              style: Theme.of(context).textTheme.titleLarge,
             ),
+            const SizedBox(height: 8),
+            const Text(
+              'The adaptive modal stayed open while PagedSheet coordinated '
+              'three page routes and their different content sizes.',
+            ),
+            const SizedBox(height: 24),
+            const Card(
+              child: ListTile(
+                leading: Icon(Icons.layers_outlined),
+                title: Text('Three-page stack'),
+                subtitle: Text('Explicit page back and complete modal close'),
+              ),
+            ),
+          ],
+        ),
+      ),
+      footer: BaseModalFooter(
+        actions: [
+          OutlinedButton(
+            onPressed: sheetNavigator.pop,
+            child: const Text('Back'),
+          ),
+          FilledButton.icon(
+            onPressed: sheetNavigator.close,
+            icon: const Icon(Icons.check),
+            label: const Text('Finish'),
           ),
         ],
       ),

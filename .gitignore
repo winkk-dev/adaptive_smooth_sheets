@@ -1,3 +1,6 @@
+# everything in root delete3 folder:
+delete3/*
+
 # Miscellaneous
 *.class
 *.log

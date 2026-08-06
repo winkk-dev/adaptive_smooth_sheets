@@ -43,6 +43,7 @@ class AppTheme {
           dialogBorderRadius: BorderRadius.circular(28),
           surfaceColor: colors.surface,
           barrierColor: colors.scrim.withValues(alpha: 0.54),
+          nativeBackBehavior: AdaptiveSheetNativeBackBehavior.popPageOrCloseSheet,
         ),
         // Application chrome stays independently customizable.
         BaseModalThemeData(

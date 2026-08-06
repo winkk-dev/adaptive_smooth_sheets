@@ -15,6 +15,8 @@ content element and its widget, form, and scroll state.
 - `AdaptiveSheetScope` for presentation-aware application chrome.
 - `AdaptiveSheetScaffold` for fixed top and bottom bars without importing
   `smooth_sheets` in application code.
+- `AdaptiveSheetPage` and `AdaptiveSheetNavigator` for nested modal navigation
+  backed by Smooth Sheets' paged-sheet behavior.
 - `AdaptiveSheetPopScope` for sheet-aware dismissal guards without leaking the
   underlying route implementation.
 
@@ -41,6 +43,8 @@ MaterialApp(
       AdaptiveSheetThemeData(
         dialogBreakpoint: 700,
         dialogWidth: 640,
+        nativeBackBehavior:
+            AdaptiveSheetNativeBackBehavior.popPageOrCloseSheet,
       ),
     ],
   ),
@@ -48,7 +52,7 @@ MaterialApp(
 );
 ```
 
-Show content with optional per-route overrides:
+Show one initial page with optional outer-route overrides:
 
 ```dart
 await showAdaptiveSheet<void>(
@@ -56,19 +60,60 @@ await showAdaptiveSheet<void>(
   config: const AdaptiveSheetConfig(
     dialogMaxHeight: 720,
   ),
-  builder: (context) {
-    final presentation = AdaptiveSheetScope.of(context).presentation;
-
-    return AdaptiveSheetScaffold(
-      topBar: Text('Shown as ${presentation.name}'),
-      body: const SingleChildScrollView(
-        child: MyModalContent(),
-      ),
-      bottomBar: const MyModalActions(),
-    );
-  },
+  page: const AdaptiveSheetPage<void>(
+    child: MyModalContent(),
+  ),
 );
 ```
+
+Push and pop pages independently from closing the complete modal:
+
+```dart
+final sheetNavigator = AdaptiveSheetNavigator.of(context);
+
+await sheetNavigator.push<void>(
+  const AdaptiveSheetPage<void>(child: NextModalContent()),
+);
+
+sheetNavigator.pop();  // Pops an internal page.
+sheetNavigator.close(); // Closes the complete modal.
+```
+
+The transition duration and curve in `AdaptiveSheetThemeData` and
+`AdaptiveSheetConfig` apply to opening and closing the outer modal. Internal
+pages currently use Smooth Sheets' platform-default transitions.
+
+On native platforms, device Back pops an internal page and closes the modal
+only from its first page by default. Escape, barrier taps, swipe dismissal, and
+`AdaptiveSheetNavigator.close()` close the complete modal. Set
+`nativeBackBehavior` on `AdaptiveSheetThemeData` for an application-wide
+native policy, or override one modal with `AdaptiveSheetConfig`:
+
+```dart
+const AdaptiveSheetConfig(
+  nativeBackBehavior: AdaptiveSheetNativeBackBehavior.closeSheet,
+)
+```
+
+`nativeBackBehavior` has no effect on web builds.
+
+### Web browser Back limitation
+
+Adaptive sheet pages use a nested Flutter `Navigator`; they are not separate
+browser-history entries. A `MaterialApp` using Flutter's imperative Navigator
+normally relies on Flutter web's single-entry history strategy. Modern Chrome
+and Firefox may skip synthetic history entries because of browser
+history-manipulation protections. Consequently, toolbar, mouse, and browser
+gesture Back actions cannot reliably unwind sheet pages or even reach Flutter.
+See the
+[Chromium intervention](https://chromium.googlesource.com/chromium/src/+/main/docs/history_manipulation_intervention.md)
+and [Mozilla tracking bug](https://bugzilla.mozilla.org/show_bug.cgi?id=1939691).
+
+The package deliberately does not intercept or rewrite application browser
+history. On web, visible sheet Back and Close controls are the supported modal
+navigation. Applications requiring browser-history-aware modal steps must
+model those steps in their root Router or provide a separate opt-in history
+integration.
 
 Headers, footers, drag handles, buttons, content padding, forms, and other
 application-specific modal chrome intentionally remain consumer concerns.

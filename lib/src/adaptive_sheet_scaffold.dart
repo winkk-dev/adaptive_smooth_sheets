@@ -48,9 +48,7 @@ class AdaptiveSheetScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scopedSurfaceColor =
-        AdaptiveSheetScope.maybeOf(context)?.theme.surfaceColor ??
-        Theme.of(context).colorScheme.surface;
+    final scopedSurfaceColor = AdaptiveSheetScope.maybeOf(context)?.theme.surfaceColor ?? Theme.of(context).colorScheme.surface;
     final bottomBarVisibility = keepBottomBarVisible
         ? BottomBarVisibility.always(ignoreBottomInset: bottomBarAvoidsKeyboard)
         : BottomBarVisibility.natural(

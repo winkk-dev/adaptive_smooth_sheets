@@ -2,6 +2,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import 'adaptive_sheet_native_back_behavior.dart';
+
 /// Flutter-only defaults for adaptive sheet routes and outer surfaces.
 ///
 /// Add an instance to [ThemeData.extensions] to configure every adaptive
@@ -32,6 +34,7 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
     this.swipeDismissible = true,
     this.useSafeArea = true,
     this.avoidKeyboardInset = true,
+    this.nativeBackBehavior = AdaptiveSheetNativeBackBehavior.popPageOrCloseSheet,
     this.transitionDuration = const Duration(milliseconds: 250),
     this.transitionCurve = Curves.fastEaseInToSlowEaseOut,
   }) : assert(dialogBreakpoint >= 0),
@@ -44,8 +47,7 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
 
   /// Returns the registered theme, or safe package defaults when absent.
   static AdaptiveSheetThemeData of(BuildContext context) {
-    return Theme.of(context).extension<AdaptiveSheetThemeData>() ??
-        const AdaptiveSheetThemeData();
+    return Theme.of(context).extension<AdaptiveSheetThemeData>() ?? const AdaptiveSheetThemeData();
   }
 
   /// The width above which the dialog presentation is selected.
@@ -109,10 +111,20 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
   /// Whether sheet content and dialogs avoid the software keyboard inset.
   final bool avoidKeyboardInset;
 
-  /// The duration of route entrance and exit transitions.
+  /// How native platform Back affects an internal page stack.
+  ///
+  /// This value has no effect on web builds. Escape, barrier taps, swipe
+  /// dismissal, and explicit close requests always target the complete modal.
+  final AdaptiveSheetNativeBackBehavior nativeBackBehavior;
+
+  /// The duration of the outer modal's entrance and exit transitions.
+  ///
+  /// Internal page transitions use Smooth Sheets' platform defaults.
   final Duration transitionDuration;
 
-  /// The curve used by route entrance and exit transitions.
+  /// The curve used by the outer modal's entrance and exit transitions.
+  ///
+  /// Internal page transitions use Smooth Sheets' platform defaults.
   final Curve transitionCurve;
 
   @override
@@ -134,6 +146,7 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
     bool? swipeDismissible,
     bool? useSafeArea,
     bool? avoidKeyboardInset,
+    AdaptiveSheetNativeBackBehavior? nativeBackBehavior,
     Duration? transitionDuration,
     Curve? transitionCurve,
   }) {
@@ -142,13 +155,9 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
       dialogWidth: dialogWidth ?? this.dialogWidth,
       dialogMaxHeight: dialogMaxHeight ?? this.dialogMaxHeight,
       dialogMargin: dialogMargin ?? this.dialogMargin,
-      bottomSheetMinimumTopGap:
-          bottomSheetMinimumTopGap ?? this.bottomSheetMinimumTopGap,
-      bottomSheetMinimumTopGapAfterSafeArea:
-          bottomSheetMinimumTopGapAfterSafeArea ??
-          this.bottomSheetMinimumTopGapAfterSafeArea,
-      bottomSheetBorderRadius:
-          bottomSheetBorderRadius ?? this.bottomSheetBorderRadius,
+      bottomSheetMinimumTopGap: bottomSheetMinimumTopGap ?? this.bottomSheetMinimumTopGap,
+      bottomSheetMinimumTopGapAfterSafeArea: bottomSheetMinimumTopGapAfterSafeArea ?? this.bottomSheetMinimumTopGapAfterSafeArea,
+      bottomSheetBorderRadius: bottomSheetBorderRadius ?? this.bottomSheetBorderRadius,
       dialogBorderRadius: dialogBorderRadius ?? this.dialogBorderRadius,
       bottomSheetElevation: bottomSheetElevation ?? this.bottomSheetElevation,
       dialogElevation: dialogElevation ?? this.dialogElevation,
@@ -159,6 +168,7 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
       swipeDismissible: swipeDismissible ?? this.swipeDismissible,
       useSafeArea: useSafeArea ?? this.useSafeArea,
       avoidKeyboardInset: avoidKeyboardInset ?? this.avoidKeyboardInset,
+      nativeBackBehavior: nativeBackBehavior ?? this.nativeBackBehavior,
       transitionDuration: transitionDuration ?? this.transitionDuration,
       transitionCurve: transitionCurve ?? this.transitionCurve,
     );
@@ -218,15 +228,12 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
       )!,
       surfaceColor: Color.lerp(surfaceColor, other.surfaceColor, t),
       barrierColor: Color.lerp(barrierColor, other.barrierColor, t)!,
-      barrierDismissible: t < 0.5
-          ? barrierDismissible
-          : other.barrierDismissible,
+      barrierDismissible: t < 0.5 ? barrierDismissible : other.barrierDismissible,
       enableDrag: t < 0.5 ? enableDrag : other.enableDrag,
       swipeDismissible: t < 0.5 ? swipeDismissible : other.swipeDismissible,
       useSafeArea: t < 0.5 ? useSafeArea : other.useSafeArea,
-      avoidKeyboardInset: t < 0.5
-          ? avoidKeyboardInset
-          : other.avoidKeyboardInset,
+      avoidKeyboardInset: t < 0.5 ? avoidKeyboardInset : other.avoidKeyboardInset,
+      nativeBackBehavior: t < 0.5 ? nativeBackBehavior : other.nativeBackBehavior,
       transitionDuration: Duration(
         microseconds: ui
             .lerpDouble(

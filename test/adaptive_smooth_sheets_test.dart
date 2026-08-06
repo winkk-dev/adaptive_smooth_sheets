@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:adaptive_smooth_sheets/adaptive_smooth_sheets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -137,9 +138,7 @@ void main() {
     _configureView(tester, size: const Size(1000, 800));
     final config = AdaptiveSheetConfig(
       presentationPolicy: AdaptiveSheetPresentationPolicy(
-        resolver: (context) => MediaQuery.sizeOf(context).width >= 900
-            ? AdaptiveSheetPresentation.dialog
-            : AdaptiveSheetPresentation.bottomSheet,
+        resolver: (context) => MediaQuery.sizeOf(context).width >= 900 ? AdaptiveSheetPresentation.dialog : AdaptiveSheetPresentation.bottomSheet,
       ),
     );
 
@@ -175,8 +174,7 @@ void main() {
         bottomSheetMinimumTopGap: 30,
         bottomSheetMinimumTopGapAfterSafeArea: 40,
       ),
-      builder: (context) =>
-          const SizedBox(key: ValueKey('tall-content'), height: 1200),
+      builder: (context) => const SizedBox(key: ValueKey('tall-content'), height: 1200),
     );
 
     await _openSheet(tester);
@@ -200,8 +198,7 @@ void main() {
 
     await _pumpLauncher(
       tester,
-      builder: (context) =>
-          const SizedBox(key: ValueKey('keyboard-content'), height: 240),
+      builder: (context) => const SizedBox(key: ValueKey('keyboard-content'), height: 240),
     );
     await _openSheet(tester);
     expect(
@@ -230,8 +227,7 @@ void main() {
     await _pumpLauncher(
       tester,
       config: const AdaptiveSheetConfig(dialogMargin: EdgeInsets.all(24)),
-      builder: (context) =>
-          const SizedBox(key: ValueKey('dialog-content'), height: 700),
+      builder: (context) => const SizedBox(key: ValueKey('dialog-content'), height: 700),
     );
     await _openSheet(tester);
 
@@ -266,6 +262,334 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('guarded-content')), findsOneWidget);
+
+    await tester.drag(
+      find.byKey(const ValueKey('guarded-content')),
+      const Offset(0, 600),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('guarded-content')), findsOneWidget);
+  });
+
+  testWidgets(
+    'navigator pushes pages, returns typed results, and keeps the first page',
+    (tester) async {
+      _configureView(tester, size: const Size(500, 900));
+      await tester.pumpWidget(const _NavigationTestApp());
+      await _openSheet(tester);
+
+      expect(find.text('canPop:false'), findsOneWidget);
+      await tester.tap(find.text('Try first pop'));
+      await tester.pump();
+      expect(find.text('firstPop:false'), findsOneWidget);
+      expect(find.text('First page'), findsOneWidget);
+
+      await tester.tap(find.text('Increment first'));
+      await tester.tap(find.text('Push second'));
+      await tester.pumpAndSettle();
+      expect(find.text('Second page'), findsOneWidget);
+      expect(find.text('canPop:true'), findsOneWidget);
+
+      await tester.tap(find.text('Push third'));
+      await tester.pumpAndSettle();
+      expect(find.text('Third page'), findsOneWidget);
+
+      await tester.tap(find.text('Return third result'));
+      await tester.pumpAndSettle();
+      expect(find.text('thirdResult:done'), findsOneWidget);
+
+      await tester.tap(find.text('Return second result'));
+      await tester.pumpAndSettle();
+      expect(find.text('First page'), findsOneWidget);
+      expect(find.text('firstCount:1'), findsOneWidget);
+      expect(find.text('secondResult:42'), findsOneWidget);
+      expect(find.text('canPop:false'), findsOneWidget);
+    },
+  );
+
+  testWidgets('close dismisses the complete sheet from internal depth', (
+    tester,
+  ) async {
+    _configureView(tester, size: const Size(500, 900));
+    await tester.pumpWidget(const _NavigationTestApp());
+    await _openSheet(tester);
+    await tester.tap(find.text('Push second'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Push third'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Close with result'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Third page'), findsNothing);
+    expect(find.text('sheetResult:closed'), findsOneWidget);
+  });
+
+  testWidgets('consecutive native backs unwind every page before closing', (
+    tester,
+  ) async {
+    _configureView(tester, size: const Size(500, 900));
+    await tester.pumpWidget(const _NavigationTestApp());
+    await _openSheet(tester);
+    await tester.tap(find.text('Push second'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Push third'));
+    await tester.pumpAndSettle();
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Third page'), findsNothing);
+    expect(find.text('Second page'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Second page'), findsNothing);
+    expect(find.text('First page'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('First page'), findsNothing);
+  });
+
+  testWidgets('dropdown routes do not count as adaptive sheet pages', (
+    tester,
+  ) async {
+    _configureView(tester, size: const Size(500, 900));
+    await _pumpLauncher(
+      tester,
+      builder: (context) => const _FirstPopupPage(),
+    );
+    await _openSheet(tester);
+
+    expect(find.text('popupCanPop:false'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('first-popup-dropdown')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('First popup B').hitTestable(), findsOneWidget);
+    expect(find.text('popupCanPop:false'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.text('First popup B').hitTestable(), findsNothing);
+    expect(find.text('First popup page'), findsOneWidget);
+    expect(find.text('popupCanPop:false'), findsOneWidget);
+
+    await tester.tap(find.text('Push popup page'));
+    await tester.pumpAndSettle();
+    expect(find.text('popupCanPop:true'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('second-popup-dropdown')));
+    await tester.pumpAndSettle();
+    expect(find.text('Second popup B').hitTestable(), findsOneWidget);
+    expect(find.text('popupCanPop:true'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Second popup B').hitTestable(), findsNothing);
+    expect(find.text('Second popup page'), findsOneWidget);
+    expect(find.text('popupCanPop:true'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('First popup page'), findsOneWidget);
+    expect(find.text('popupCanPop:false'), findsOneWidget);
+  });
+
+  testWidgets('page dismissal guard remains active below a dropdown route', (
+    tester,
+  ) async {
+    _configureView(tester, size: const Size(500, 900));
+    await _pumpLauncher(
+      tester,
+      builder: (context) => const _GuardedDropdownPage(),
+    );
+    await _openSheet(tester);
+
+    await tester.tap(find.byKey(const ValueKey('guarded-dropdown')));
+    await tester.pumpAndSettle();
+    expect(find.text('Guarded popup B').hitTestable(), findsOneWidget);
+
+    tester
+        .state<_GuardedDropdownPageState>(
+          find.byType(_GuardedDropdownPage),
+        )
+        .attemptClose();
+    await tester.pump();
+
+    expect(find.text('Guarded dropdown page'), findsOneWidget);
+    expect(find.text('Guarded popup B').hitTestable(), findsOneWidget);
+    expect(find.text('blockedAttempts:1'), findsOneWidget);
+
+    await tester.tap(find.text('Guarded popup B').hitTestable());
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Guarded popup B').hitTestable(), findsNothing);
+  });
+
+  testWidgets('Escape preserves descendant autofocus and always closes', (
+    tester,
+  ) async {
+    _configureView(tester, size: const Size(500, 900));
+    await _pumpLauncher(
+      tester,
+      config: const AdaptiveSheetConfig(barrierDismissible: false),
+      builder: (context) => const SizedBox(
+        key: ValueKey('autofocus-content'),
+        height: 180,
+        child: TextField(autofocus: true),
+      ),
+    );
+    await _openSheet(tester);
+
+    final editableText = tester.widget<EditableText>(
+      find.byType(EditableText),
+    );
+    expect(editableText.focusNode.hasFocus, isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('autofocus-content')), findsNothing);
+  });
+
+  testWidgets('barrier and Escape close the outer sheet at page depth', (
+    tester,
+  ) async {
+    _configureView(tester, size: const Size(500, 900));
+    await tester.pumpWidget(const _NavigationTestApp());
+    await _openSheet(tester);
+    await tester.tap(find.text('Push second'));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(8, 8));
+    await tester.pumpAndSettle();
+    expect(find.text('Second page'), findsNothing);
+
+    await _openSheet(tester);
+    await tester.tap(find.text('Push second'));
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.text('Second page'), findsNothing);
+    expect(find.text('First page'), findsNothing);
+  });
+
+  testWidgets('native back behavior supports theme and per-sheet policies', (
+    tester,
+  ) async {
+    _configureView(tester, size: const Size(500, 900));
+    await tester.pumpWidget(
+      const _NavigationTestApp(
+        sheetTheme: AdaptiveSheetThemeData(
+          nativeBackBehavior: AdaptiveSheetNativeBackBehavior.closeSheet,
+        ),
+      ),
+    );
+    await _openSheet(tester);
+    await tester.tap(find.text('Push second'));
+    await tester.pumpAndSettle();
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('First page'), findsNothing);
+    expect(find.text('Second page'), findsNothing);
+
+    await tester.pumpWidget(
+      const _NavigationTestApp(
+        sheetTheme: AdaptiveSheetThemeData(
+          nativeBackBehavior: AdaptiveSheetNativeBackBehavior.closeSheet,
+        ),
+        config: AdaptiveSheetConfig(
+          nativeBackBehavior: AdaptiveSheetNativeBackBehavior.popPageOrCloseSheet,
+        ),
+      ),
+    );
+    await _openSheet(tester);
+    await tester.tap(find.text('Push second'));
+    await tester.pumpAndSettle();
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('First page'), findsOneWidget);
+    expect(find.text('Second page'), findsNothing);
+  });
+
+  testWidgets('swipe dismissal closes the outer sheet at page depth', (
+    tester,
+  ) async {
+    _configureView(tester, size: const Size(500, 900));
+    await tester.pumpWidget(const _NavigationTestApp());
+    await _openSheet(tester);
+    await tester.tap(find.text('Push second'));
+    await tester.pumpAndSettle();
+
+    await tester.drag(
+      find.byKey(const ValueKey('second-page-surface')),
+      const Offset(0, 700),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Second page'), findsNothing);
+  });
+
+  testWidgets('current nested page and state survive responsive resizing', (
+    tester,
+  ) async {
+    _configureView(tester, size: const Size(500, 900));
+    await tester.pumpWidget(const _NavigationTestApp());
+    await _openSheet(tester);
+    await tester.tap(find.text('Push second'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Increment second'));
+    await tester.pump();
+    expect(find.text('secondCount:1'), findsOneWidget);
+
+    tester.view.physicalSize = const Size(1200, 900);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Second page'), findsOneWidget);
+    expect(find.text('secondCount:1'), findsOneWidget);
+    expect(find.text('canPop:true'), findsOneWidget);
+    expect(
+      AdaptiveSheetScope.of(
+        tester.element(find.byKey(const ValueKey('second-page-surface'))),
+      ).presentation,
+      AdaptiveSheetPresentation.dialog,
+    );
+
+    await tester.tap(find.text('Back to first'));
+    await tester.pumpAndSettle();
+    expect(find.text('First page'), findsOneWidget);
+  });
+
+  testWidgets('paged sheet settles to each page height in both directions', (
+    tester,
+  ) async {
+    _configureView(tester, size: const Size(500, 900));
+    await _pumpLauncher(
+      tester,
+      builder: (context) => const _ShortHeightPage(),
+    );
+    await _openSheet(tester);
+
+    expect(
+      tester.getRect(find.byKey(const ValueKey('short-height-page'))).top,
+      680,
+    );
+
+    await tester.tap(find.text('Show tall page'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.takeException(), isNull);
+    await tester.pumpAndSettle();
+    expect(
+      tester.getRect(find.byKey(const ValueKey('tall-height-page'))).top,
+      460,
+    );
+
+    await tester.tap(find.text('Show short page'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.getRect(find.byKey(const ValueKey('short-height-page'))).top,
+      680,
+    );
   });
 }
 
@@ -306,7 +630,9 @@ Future<void> _pumpLauncher(
                 showAdaptiveSheet<void>(
                   context: context,
                   config: config,
-                  builder: builder,
+                  page: AdaptiveSheetPage<void>(
+                    child: Builder(builder: builder),
+                  ),
                 ),
               );
             },
@@ -372,6 +698,346 @@ class _ScrollProbeState extends State<_ScrollProbe> {
       itemExtent: 48,
       itemCount: 30,
       itemBuilder: (context, index) => Text('Item $index'),
+    );
+  }
+}
+
+class _NavigationTestApp extends StatefulWidget {
+  const _NavigationTestApp({
+    this.config = const AdaptiveSheetConfig(),
+    this.sheetTheme,
+  });
+
+  final AdaptiveSheetConfig config;
+  final AdaptiveSheetThemeData? sheetTheme;
+
+  @override
+  State<_NavigationTestApp> createState() => _NavigationTestAppState();
+}
+
+class _NavigationTestAppState extends State<_NavigationTestApp> {
+  String? _sheetResult;
+
+  Future<void> _showSheet(BuildContext context) async {
+    final result = await showAdaptiveSheet<String>(
+      context: context,
+      config: widget.config,
+      page: const AdaptiveSheetPage<String>(child: _FirstNavigationPage()),
+    );
+    if (mounted) {
+      setState(() => _sheetResult = result);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      theme: widget.sheetTheme == null ? null : ThemeData(extensions: [widget.sheetTheme!]),
+      home: Scaffold(
+        body: Builder(
+          builder: (context) => Column(
+            children: [
+              FilledButton(
+                onPressed: () => unawaited(_showSheet(context)),
+                child: const Text('Open'),
+              ),
+              Text('sheetResult:${_sheetResult ?? 'none'}'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FirstNavigationPage extends StatefulWidget {
+  const _FirstNavigationPage();
+
+  @override
+  State<_FirstNavigationPage> createState() => _FirstNavigationPageState();
+}
+
+class _FirstNavigationPageState extends State<_FirstNavigationPage> {
+  int _count = 0;
+  bool? _firstPopResult;
+  int? _secondResult;
+
+  Future<void> _pushSecond(BuildContext context) async {
+    final result = await AdaptiveSheetNavigator.of(context).push<int>(
+      const AdaptiveSheetPage<int>(child: _SecondNavigationPage()),
+    );
+    if (mounted) {
+      setState(() => _secondResult = result);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final navigator = AdaptiveSheetNavigator.of(context);
+    return SizedBox(
+      height: 320,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('First page'),
+          Text('canPop:${navigator.canPop}'),
+          Text('firstCount:$_count'),
+          Text('firstPop:${_firstPopResult ?? 'none'}'),
+          Text('secondResult:${_secondResult ?? 'none'}'),
+          FilledButton(
+            onPressed: () => setState(() => _count += 1),
+            child: const Text('Increment first'),
+          ),
+          FilledButton(
+            onPressed: () {
+              setState(() => _firstPopResult = navigator.pop<void>());
+            },
+            child: const Text('Try first pop'),
+          ),
+          FilledButton(
+            onPressed: () => unawaited(_pushSecond(context)),
+            child: const Text('Push second'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SecondNavigationPage extends StatefulWidget {
+  const _SecondNavigationPage();
+
+  @override
+  State<_SecondNavigationPage> createState() => _SecondNavigationPageState();
+}
+
+class _SecondNavigationPageState extends State<_SecondNavigationPage> {
+  int _count = 0;
+  String? _thirdResult;
+
+  Future<void> _pushThird(BuildContext context) async {
+    final result = await AdaptiveSheetNavigator.of(context).push<String>(
+      const AdaptiveSheetPage<String>(child: _ThirdNavigationPage()),
+    );
+    if (mounted) {
+      setState(() => _thirdResult = result);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final navigator = AdaptiveSheetNavigator.of(context);
+    return SizedBox(
+      key: const ValueKey('second-page-surface'),
+      height: 360,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('Second page'),
+          Text('canPop:${navigator.canPop}'),
+          Text('secondCount:$_count'),
+          Text('thirdResult:${_thirdResult ?? 'none'}'),
+          FilledButton(
+            onPressed: () => setState(() => _count += 1),
+            child: const Text('Increment second'),
+          ),
+          FilledButton(
+            onPressed: () => unawaited(_pushThird(context)),
+            child: const Text('Push third'),
+          ),
+          OutlinedButton(
+            onPressed: () => navigator.pop<int>(42),
+            child: const Text('Return second result'),
+          ),
+          OutlinedButton(
+            onPressed: navigator.pop,
+            child: const Text('Back to first'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThirdNavigationPage extends StatelessWidget {
+  const _ThirdNavigationPage();
+
+  @override
+  Widget build(BuildContext context) {
+    final navigator = AdaptiveSheetNavigator.of(context);
+    return SizedBox(
+      height: 300,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('Third page'),
+          FilledButton(
+            onPressed: () => navigator.pop<String>('done'),
+            child: const Text('Return third result'),
+          ),
+          FilledButton(
+            onPressed: () => navigator.close<String>('closed'),
+            child: const Text('Close with result'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FirstPopupPage extends StatelessWidget {
+  const _FirstPopupPage();
+
+  @override
+  Widget build(BuildContext context) {
+    final navigator = AdaptiveSheetNavigator.of(context);
+    return SizedBox(
+      height: 240,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('First popup page'),
+          Text('popupCanPop:${navigator.canPop}'),
+          _PopupDropdown(
+            key: const ValueKey('first-popup-dropdown'),
+            labelPrefix: 'First popup',
+          ),
+          FilledButton(
+            onPressed: () {
+              unawaited(
+                navigator.push<void>(
+                  const AdaptiveSheetPage<void>(child: _SecondPopupPage()),
+                ),
+              );
+            },
+            child: const Text('Push popup page'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SecondPopupPage extends StatelessWidget {
+  const _SecondPopupPage();
+
+  @override
+  Widget build(BuildContext context) {
+    final navigator = AdaptiveSheetNavigator.of(context);
+    return SizedBox(
+      height: 240,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('Second popup page'),
+          Text('popupCanPop:${navigator.canPop}'),
+          const _PopupDropdown(
+            key: ValueKey('second-popup-dropdown'),
+            labelPrefix: 'Second popup',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PopupDropdown extends StatelessWidget {
+  const _PopupDropdown({required this.labelPrefix, super.key});
+
+  final String labelPrefix;
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButton<String>(
+      value: 'a',
+      onChanged: (_) {},
+      items: [
+        DropdownMenuItem(value: 'a', child: Text('$labelPrefix A')),
+        DropdownMenuItem(value: 'b', child: Text('$labelPrefix B')),
+      ],
+    );
+  }
+}
+
+class _GuardedDropdownPage extends StatefulWidget {
+  const _GuardedDropdownPage();
+
+  @override
+  State<_GuardedDropdownPage> createState() => _GuardedDropdownPageState();
+}
+
+class _GuardedDropdownPageState extends State<_GuardedDropdownPage> {
+  var _blockedAttempts = 0;
+
+  void attemptClose() {
+    AdaptiveSheetNavigator.of(context).close();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AdaptiveSheetPopScope<void>(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          setState(() => _blockedAttempts += 1);
+        }
+      },
+      child: SizedBox(
+        height: 220,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('Guarded dropdown page'),
+            Text('blockedAttempts:$_blockedAttempts'),
+            const _PopupDropdown(
+              key: ValueKey('guarded-dropdown'),
+              labelPrefix: 'Guarded popup',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ShortHeightPage extends StatelessWidget {
+  const _ShortHeightPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      key: const ValueKey('short-height-page'),
+      height: 220,
+      child: Center(
+        child: FilledButton(
+          onPressed: () {
+            unawaited(
+              AdaptiveSheetNavigator.of(context).push<void>(
+                const AdaptiveSheetPage<void>(child: _TallHeightPage()),
+              ),
+            );
+          },
+          child: const Text('Show tall page'),
+        ),
+      ),
+    );
+  }
+}
+
+class _TallHeightPage extends StatelessWidget {
+  const _TallHeightPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      key: const ValueKey('tall-height-page'),
+      height: 440,
+      child: Center(
+        child: FilledButton(
+          onPressed: AdaptiveSheetNavigator.of(context).pop,
+          child: const Text('Show short page'),
+        ),
+      ),
     );
   }
 }

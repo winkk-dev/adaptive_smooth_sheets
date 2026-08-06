@@ -18,10 +18,13 @@ class BaseModal extends StatelessWidget {
     super.key,
     this.subtitle,
     this.leading,
+    this.showBackButton = true,
+    this.onBackPressed,
     this.headerActions = const [],
     this.headerBottom,
     this.footer,
     this.showCloseButton = true,
+    this.onClosePressed,
     this.showDragHandle = true,
   });
 
@@ -35,7 +38,15 @@ class BaseModal extends StatelessWidget {
   final Widget body;
 
   /// An optional widget before the title.
+  ///
+  /// This replaces the automatic internal-page back button when non-null.
   final Widget? leading;
+
+  /// Whether to show an automatic back button on pushed pages.
+  final bool showBackButton;
+
+  /// Overrides the automatic internal-page back action.
+  final VoidCallback? onBackPressed;
 
   /// Widgets placed before the close action.
   final List<Widget> headerActions;
@@ -49,6 +60,9 @@ class BaseModal extends StatelessWidget {
   /// Whether to include a close action in the header.
   final bool showCloseButton;
 
+  /// Overrides the action that closes the complete adaptive sheet.
+  final VoidCallback? onClosePressed;
+
   /// Whether bottom-sheet presentation includes a drag handle.
   final bool showDragHandle;
 
@@ -59,9 +73,12 @@ class BaseModal extends StatelessWidget {
         title: title,
         subtitle: subtitle,
         leading: leading,
+        showBackButton: showBackButton,
+        onBackPressed: onBackPressed,
         actions: headerActions,
         bottom: headerBottom,
         showCloseButton: showCloseButton,
+        onClosePressed: onClosePressed,
         showDragHandle: showDragHandle,
       ),
       bottomBar: footer,
@@ -73,12 +90,10 @@ class BaseModal extends StatelessWidget {
 /// An explicitly padded or eager-scrollable modal body.
 class BaseModalBody extends StatelessWidget {
   /// Creates a non-scrolling padded body.
-  const BaseModalBody({required this.child, super.key, this.padding})
-    : scrollable = false;
+  const BaseModalBody({required this.child, super.key, this.padding}) : scrollable = false;
 
   /// Creates a padded body inside a [SingleChildScrollView].
-  const BaseModalBody.scrollable({required this.child, super.key, this.padding})
-    : scrollable = true;
+  const BaseModalBody.scrollable({required this.child, super.key, this.padding}) : scrollable = true;
 
   /// The body content.
   final Widget child;
@@ -107,9 +122,12 @@ class BaseModalHeader extends StatelessWidget {
     super.key,
     this.subtitle,
     this.leading,
+    this.showBackButton = true,
+    this.onBackPressed,
     this.actions = const [],
     this.bottom,
     this.showCloseButton = true,
+    this.onClosePressed,
     this.showDragHandle = true,
   });
 
@@ -122,6 +140,12 @@ class BaseModalHeader extends StatelessWidget {
   /// Optional leading widget.
   final Widget? leading;
 
+  /// Whether to show an automatic back button on pushed pages.
+  final bool showBackButton;
+
+  /// Overrides the automatic internal-page back action.
+  final VoidCallback? onBackPressed;
+
   /// Header action widgets.
   final List<Widget> actions;
 
@@ -131,15 +155,26 @@ class BaseModalHeader extends StatelessWidget {
   /// Whether to include the default close action.
   final bool showCloseButton;
 
+  /// Overrides the action that closes the complete adaptive sheet.
+  final VoidCallback? onClosePressed;
+
   /// Whether to render a handle in bottom-sheet presentation.
   final bool showDragHandle;
 
   @override
   Widget build(BuildContext context) {
     final modalTheme = BaseModalThemeData.of(context);
-    final isBottomSheet =
-        AdaptiveSheetScope.of(context).presentation ==
-        AdaptiveSheetPresentation.bottomSheet;
+    final isBottomSheet = AdaptiveSheetScope.of(context).presentation == AdaptiveSheetPresentation.bottomSheet;
+    final sheetNavigator = AdaptiveSheetNavigator.of(context);
+    final effectiveLeading =
+        leading ??
+        (showBackButton && sheetNavigator.canPop
+            ? IconButton(
+                onPressed: onBackPressed ?? sheetNavigator.pop,
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                icon: const Icon(Icons.arrow_back),
+              )
+            : null);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -169,12 +204,12 @@ class BaseModalHeader extends StatelessWidget {
             padding: modalTheme.headerPadding,
             child: Row(
               children: [
-                if (leading != null) ...[
+                if (effectiveLeading != null) ...[
                   IconTheme.merge(
                     data: IconThemeData(
                       color: modalTheme.headerForegroundColor,
                     ),
-                    child: leading!,
+                    child: effectiveLeading,
                   ),
                   const SizedBox(width: 12),
                 ],
@@ -197,11 +232,9 @@ class BaseModalHeader extends StatelessWidget {
                           subtitle!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: modalTheme.headerForegroundColor
-                                    .withValues(alpha: 0.72),
-                              ),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: modalTheme.headerForegroundColor.withValues(alpha: 0.72),
+                          ),
                         ),
                     ],
                   ),
@@ -209,7 +242,7 @@ class BaseModalHeader extends StatelessWidget {
                 ...actions,
                 if (showCloseButton)
                   IconButton(
-                    onPressed: () => Navigator.of(context).maybePop(),
+                    onPressed: onClosePressed ?? sheetNavigator.close,
                     tooltip: MaterialLocalizations.of(
                       context,
                     ).closeButtonTooltip,
@@ -244,9 +277,7 @@ class BaseModalFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final modalTheme = BaseModalThemeData.of(context);
-    final isBottomSheet =
-        AdaptiveSheetScope.of(context).presentation ==
-        AdaptiveSheetPresentation.bottomSheet;
+    final isBottomSheet = AdaptiveSheetScope.of(context).presentation == AdaptiveSheetPresentation.bottomSheet;
 
     final Widget content;
     if (isBottomSheet && stackOnBottomSheet) {
@@ -256,9 +287,7 @@ class BaseModalFooter extends StatelessWidget {
         children: _withVerticalGaps(actions),
       );
     } else {
-      final rowActions = isBottomSheet
-          ? actions.map((action) => Expanded(child: action)).toList()
-          : actions;
+      final rowActions = isBottomSheet ? actions.map((action) => Expanded(child: action)).toList() : actions;
       content = Row(
         mainAxisAlignment: MainAxisAlignment.end,
         mainAxisSize: isBottomSheet ? MainAxisSize.max : MainAxisSize.min,

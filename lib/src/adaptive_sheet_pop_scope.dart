@@ -1,14 +1,13 @@
-import 'package:flutter/widgets.dart';
-import 'package:smooth_sheets/smooth_sheets.dart';
+part of 'adaptive_sheet_route.dart';
 
-/// Controls whether an adaptive sheet can be popped or swipe-dismissed.
+/// Controls whether the current adaptive sheet can be dismissed.
 ///
-/// Unlike Flutter's [PopScope], this scope can disable the sheet's swipe
-/// gesture completely when [canPop] is false and
-/// [onPopInvokedWithResult] is null. Supplying a callback keeps the gesture
-/// enabled and reports unsuccessful pop attempts to the callback.
-class AdaptiveSheetPopScope<T> extends StatelessWidget {
-  /// Creates a scope that coordinates route pops and sheet swipe gestures.
+/// Unlike Flutter's [PopScope], this scope targets the outer adaptive modal
+/// even when its child is hosted by an internal page route. Supplying a
+/// callback while [canPop] is false keeps the sheet gesture enabled and reports
+/// blocked dismissal attempts. Omitting the callback disables the gesture.
+class AdaptiveSheetPopScope<T> extends StatefulWidget {
+  /// Creates a scope that coordinates modal pops and sheet swipe gestures.
   const AdaptiveSheetPopScope({
     required this.child,
     super.key,
@@ -16,21 +15,82 @@ class AdaptiveSheetPopScope<T> extends StatelessWidget {
     this.onPopInvokedWithResult,
   });
 
-  /// Whether the enclosing adaptive sheet route may be popped.
+  /// Whether the enclosing adaptive modal may be closed.
   final bool canPop;
 
-  /// Called after a pop is handled or blocked, including swipe attempts.
+  /// Called after an outer-modal pop is handled or blocked.
   final PopInvokedWithResultCallback<T>? onPopInvokedWithResult;
 
   /// The widget below this scope.
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    return SheetPopScope<T>(
-      canPop: canPop,
-      onPopInvokedWithResult: onPopInvokedWithResult,
-      child: child,
+  State<AdaptiveSheetPopScope<T>> createState() => _AdaptiveSheetPopScopeState<T>();
+}
+
+class _AdaptiveSheetPopScopeState<T> extends State<AdaptiveSheetPopScope<T>> {
+  AdaptiveSheetNavigator? _sheetNavigator;
+  _AdaptiveSheetPopRegistration? _registration;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final sheetNavigator = AdaptiveSheetNavigator.maybeOf(context);
+    final pageRoute = _AdaptiveSheetPageRouteScope.maybeOf(context);
+    assert(
+      sheetNavigator != null && pageRoute != null,
+      'AdaptiveSheetPopScope must be used below an AdaptiveSheetPage.',
     );
+
+    if (sheetNavigator == _sheetNavigator && pageRoute == _registration?.route) {
+      return;
+    }
+
+    _unregister();
+    _sheetNavigator = sheetNavigator;
+    _registration = _AdaptiveSheetPopRegistration(
+      route: pageRoute!,
+      canPop: widget.canPop,
+      onPopInvokedWithResult: _effectiveCallback,
+    );
+    sheetNavigator!._registerPopScope(_registration!);
   }
+
+  @override
+  void didUpdateWidget(AdaptiveSheetPopScope<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final registration = _registration;
+    if (registration != null) {
+      registration
+        ..canPop = widget.canPop
+        ..onPopInvokedWithResult = _effectiveCallback;
+      _sheetNavigator!._popScopeChanged();
+    }
+  }
+
+  @override
+  void dispose() {
+    _unregister();
+    super.dispose();
+  }
+
+  void _unregister() {
+    final registration = _registration;
+    if (registration != null) {
+      _sheetNavigator?._unregisterPopScope(registration);
+    }
+    _registration = null;
+    _sheetNavigator = null;
+  }
+
+  void _invokeCallback(bool didPop, Object? result) {
+    widget.onPopInvokedWithResult?.call(didPop, result as T?);
+  }
+
+  PopInvokedWithResultCallback<dynamic>? get _effectiveCallback {
+    return widget.onPopInvokedWithResult == null ? null : _invokeCallback;
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

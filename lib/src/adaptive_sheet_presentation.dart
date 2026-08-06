@@ -13,15 +13,13 @@ enum AdaptiveSheetPresentation {
 ///
 /// Reading [MediaQuery] in a resolver makes an open route react when its
 /// window is resized.
-typedef AdaptiveSheetPresentationResolver =
-    AdaptiveSheetPresentation Function(BuildContext context);
+typedef AdaptiveSheetPresentationResolver = AdaptiveSheetPresentation Function(BuildContext context);
 
 /// Controls how an adaptive sheet chooses its current presentation.
 @immutable
 class AdaptiveSheetPresentationPolicy {
   /// Creates a presentation policy.
-  const AdaptiveSheetPresentationPolicy({this.dialogBreakpoint, this.resolver})
-    : assert(dialogBreakpoint == null || dialogBreakpoint >= 0);
+  const AdaptiveSheetPresentationPolicy({this.dialogBreakpoint, this.resolver}) : assert(dialogBreakpoint == null || dialogBreakpoint >= 0);
 
   /// Overrides the global width breakpoint for this route.
   ///
@@ -46,8 +44,6 @@ class AdaptiveSheetPresentationPolicy {
     }
 
     final breakpoint = dialogBreakpoint ?? fallbackDialogBreakpoint;
-    return MediaQuery.sizeOf(context).width > breakpoint
-        ? AdaptiveSheetPresentation.dialog
-        : AdaptiveSheetPresentation.bottomSheet;
+    return MediaQuery.sizeOf(context).width > breakpoint ? AdaptiveSheetPresentation.dialog : AdaptiveSheetPresentation.bottomSheet;
   }
 }
