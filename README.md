@@ -12,6 +12,8 @@ content element and its widget, form, and scroll state.
 - Global Flutter `ThemeExtension` defaults and focused per-route overrides.
 - Configurable dialog geometry, surface styling, barriers, dragging,
   swipe-to-dismiss, transitions, safe areas, and keyboard avoidance.
+- Bottom-sheet dragging and swipe-to-dismiss work with mouse input on desktop
+  as well as touch-like input, with independent mouse-drag control.
 - `AdaptiveSheetScope` for presentation-aware application chrome.
 - `AdaptiveSheetScaffold` for fixed top and bottom bars without importing
   `smooth_sheets` in application code.
@@ -31,6 +33,11 @@ import 'package:adaptive_smooth_sheets/adaptive_smooth_sheets.dart';
 
 An `AdaptiveSheetThemeData` extension is optional. Package defaults are used
 when no extension is registered.
+
+Mouse dragging is enabled for bottom sheets by default. Disable it globally
+with `AdaptiveSheetThemeData(enableMouseDrag: false)`, or for one route with
+`AdaptiveSheetConfig(enableMouseDrag: false)`. Touch-like dragging remains
+controlled independently by `enableDrag`.
 
 ## Usage
 

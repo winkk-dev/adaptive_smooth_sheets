@@ -32,6 +32,7 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
     this.barrierColor = const Color(0x8A000000),
     this.barrierDismissible = true,
     this.enableDrag = true,
+    this.enableMouseDrag = true,
     this.swipeDismissible = true,
     this.useSafeArea = true,
     this.avoidKeyboardInset = true,
@@ -100,6 +101,12 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
   /// Whether the bottom sheet responds to vertical drag gestures.
   final bool enableDrag;
 
+  /// Whether an enabled bottom sheet also responds to mouse drags.
+  ///
+  /// This is based on the pointer device rather than the target platform, so
+  /// it also applies to web and to any non-desktop device using a mouse.
+  final bool enableMouseDrag;
+
   /// Whether a downward bottom-sheet drag may dismiss the route.
   ///
   /// Dragging must also be enabled for the gesture to originate in the sheet.
@@ -148,6 +155,7 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
     Color? barrierColor,
     bool? barrierDismissible,
     bool? enableDrag,
+    bool? enableMouseDrag,
     bool? swipeDismissible,
     bool? useSafeArea,
     bool? avoidKeyboardInset,
@@ -172,6 +180,7 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
       barrierColor: barrierColor ?? this.barrierColor,
       barrierDismissible: barrierDismissible ?? this.barrierDismissible,
       enableDrag: enableDrag ?? this.enableDrag,
+      enableMouseDrag: enableMouseDrag ?? this.enableMouseDrag,
       swipeDismissible: swipeDismissible ?? this.swipeDismissible,
       useSafeArea: useSafeArea ?? this.useSafeArea,
       avoidKeyboardInset: avoidKeyboardInset ?? this.avoidKeyboardInset,
@@ -239,6 +248,7 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
       barrierColor: Color.lerp(barrierColor, other.barrierColor, t)!,
       barrierDismissible: t < 0.5 ? barrierDismissible : other.barrierDismissible,
       enableDrag: t < 0.5 ? enableDrag : other.enableDrag,
+      enableMouseDrag: t < 0.5 ? enableMouseDrag : other.enableMouseDrag,
       swipeDismissible: t < 0.5 ? swipeDismissible : other.swipeDismissible,
       useSafeArea: t < 0.5 ? useSafeArea : other.useSafeArea,
       avoidKeyboardInset: t < 0.5 ? avoidKeyboardInset : other.avoidKeyboardInset,

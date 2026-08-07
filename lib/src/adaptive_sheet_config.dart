@@ -32,6 +32,7 @@ class AdaptiveSheetConfig {
     this.barrierColor,
     this.barrierDismissible,
     this.enableDrag,
+    this.enableMouseDrag,
     this.swipeDismissible,
     this.useSafeArea,
     this.avoidKeyboardInset,
@@ -108,6 +109,9 @@ class AdaptiveSheetConfig {
   /// Overrides [AdaptiveSheetThemeData.enableDrag].
   final bool? enableDrag;
 
+  /// Overrides [AdaptiveSheetThemeData.enableMouseDrag].
+  final bool? enableMouseDrag;
+
   /// Overrides [AdaptiveSheetThemeData.swipeDismissible].
   final bool? swipeDismissible;
 
@@ -153,6 +157,7 @@ class AdaptiveSheetConfig {
       barrierColor: barrierColor,
       barrierDismissible: barrierDismissible,
       enableDrag: enableDrag,
+      enableMouseDrag: enableMouseDrag,
       swipeDismissible: swipeDismissible,
       useSafeArea: useSafeArea,
       avoidKeyboardInset: avoidKeyboardInset,

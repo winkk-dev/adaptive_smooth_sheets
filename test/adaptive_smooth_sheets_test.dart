@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:adaptive_smooth_sheets/adaptive_smooth_sheets.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -50,6 +51,43 @@ void main() {
     },
   );
 
+  testWidgets(
+    'dialog route adapts to a bottom sheet without losing child state',
+    (tester) async {
+      _configureView(tester, size: const Size(1200, 800));
+
+      await _pumpLauncher(
+        tester,
+        builder: (context) => const AdaptiveSheetScaffold(
+          body: SizedBox(height: 240, child: _StateProbe()),
+        ),
+      );
+
+      await _openSheet(tester);
+      final stateBefore = tester.state<_StateProbeState>(
+        find.byType(_StateProbe),
+      );
+      await tester.tap(find.text('Increment'));
+      await tester.enterText(
+        find.byKey(const ValueKey('state-probe-input')),
+        'Draft note',
+      );
+      await tester.pump();
+      expect(find.text('dialog:1'), findsOneWidget);
+
+      tester.view.physicalSize = const Size(500, 800);
+      await tester.pumpAndSettle();
+
+      final stateAfter = tester.state<_StateProbeState>(
+        find.byType(_StateProbe),
+      );
+      expect(identical(stateAfter, stateBefore), isTrue);
+      expect(find.text('bottomSheet:1'), findsOneWidget);
+      expect(find.text('Draft note'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('scroll position survives responsive reparenting', (
     tester,
   ) async {
@@ -90,6 +128,7 @@ void main() {
       dialogWidth: 700,
       surfaceColor: Colors.red,
       barrierDismissible: true,
+      enableMouseDrag: false,
     );
     late AdaptiveSheetScope resolvedScope;
 
@@ -103,6 +142,7 @@ void main() {
         dialogWidth: 520,
         surfaceColor: Colors.blue,
         barrierDismissible: false,
+        enableMouseDrag: true,
       ),
       builder: (context) {
         final scope = AdaptiveSheetScope.of(context);
@@ -121,6 +161,7 @@ void main() {
     expect(resolvedScope.theme.dialogBreakpoint, 1000);
     expect(resolvedScope.theme.dialogWidth, 520);
     expect(resolvedScope.theme.surfaceColor, Colors.blue);
+    expect(resolvedScope.theme.enableMouseDrag, isTrue);
     expect(resolvedScope.theme.dialogMaxHeight, globalTheme.dialogMaxHeight);
     expect(
       tester.getSize(find.byKey(const ValueKey('overridden-content'))).width,
@@ -530,6 +571,63 @@ void main() {
     expect(find.text('Second page'), findsNothing);
   });
 
+  testWidgets('mouse dragging dismisses a bottom sheet', (tester) async {
+    _configureView(tester, size: const Size(500, 900));
+    await _pumpLauncher(
+      tester,
+      builder: (context) => const SizedBox(
+        key: ValueKey('mouse-drag-content'),
+        height: 320,
+      ),
+    );
+    await _openSheet(tester);
+
+    final content = find.byKey(const ValueKey('mouse-drag-content'));
+    final initialTop = tester.getRect(content).top;
+    final gesture = await tester.startGesture(
+      tester.getCenter(content),
+      kind: PointerDeviceKind.mouse,
+    );
+    await gesture.moveBy(const Offset(0, 700));
+    await tester.pump();
+    expect(tester.getRect(content).top, greaterThan(initialTop));
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(content, findsNothing);
+  });
+
+  testWidgets('mouse dragging can be disabled independently', (tester) async {
+    _configureView(tester, size: const Size(500, 900));
+    await _pumpLauncher(
+      tester,
+      config: const AdaptiveSheetConfig(enableMouseDrag: false),
+      builder: (context) => const SizedBox(
+        key: ValueKey('mouse-drag-disabled-content'),
+        height: 320,
+      ),
+    );
+    await _openSheet(tester);
+
+    final content = find.byKey(
+      const ValueKey('mouse-drag-disabled-content'),
+    );
+    final gesture = await tester.startGesture(
+      tester.getCenter(content),
+      kind: PointerDeviceKind.mouse,
+    );
+    await gesture.moveBy(const Offset(0, 700));
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(content, findsOneWidget);
+
+    final touchGesture = await tester.startGesture(tester.getCenter(content));
+    await touchGesture.moveBy(const Offset(0, 700));
+    await touchGesture.up();
+    await tester.pumpAndSettle();
+    expect(content, findsNothing);
+  });
+
   testWidgets('current nested page and state survive responsive resizing', (
     tester,
   ) async {
@@ -666,6 +764,7 @@ class _StateProbeState extends State<_StateProbe> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text('${presentation.name}:$_count'),
+        const TextField(key: ValueKey('state-probe-input')),
         FilledButton(
           onPressed: () => setState(() => _count += 1),
           child: const Text('Increment'),

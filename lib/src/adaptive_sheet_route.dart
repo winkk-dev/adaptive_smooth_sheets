@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
@@ -233,13 +234,19 @@ class _AdaptiveSheetState<T> extends State<_AdaptiveSheet<T>> {
       .._canClose = (() => sheetNavigator._canClose);
     final safePadding = isBottomSheet && widget.theme.useSafeArea ? MediaQuery.paddingOf(context) : EdgeInsets.zero;
     final keyboardBottom = isBottomSheet && widget.theme.avoidKeyboardInset ? MediaQuery.viewInsetsOf(context).bottom : 0.0;
+    final ambientScrollBehavior = ScrollConfiguration.of(context);
 
-    final navigator = Navigator(
-      key: _navigatorKey,
-      observers: [sheetNavigator._observer],
-      onGenerateInitialRoutes: (navigator, initialRoute) => [
-        _buildPageRoute<T>(widget.page),
-      ],
+    final navigator = ScrollConfiguration(
+      // Keep the ambient device policy for scrollables inside the sheet. The
+      // outer ScrollConfiguration below is only for Smooth Sheets' drag layer.
+      behavior: ambientScrollBehavior,
+      child: Navigator(
+        key: _navigatorKey,
+        observers: [sheetNavigator._observer],
+        onGenerateInitialRoutes: (navigator, initialRoute) => [
+          _buildPageRoute<T>(widget.page),
+        ],
+      ),
     );
 
     final pagedSheet = PagedSheet(
@@ -278,6 +285,25 @@ class _AdaptiveSheetState<T> extends State<_AdaptiveSheet<T>> {
             ),
     );
 
+    final routeThemeChild = PagedSheetRouteTheme(
+      data: routeTheme,
+      child: pagedSheet,
+    );
+    final sheetChild = ScrollConfiguration(
+      // Flutter intentionally excludes mice from its default drag devices.
+      // Opt in only for Smooth Sheets' outer drag layer when requested; the
+      // route theme still disables dragging in a dialog presentation.
+      behavior: widget.theme.enableMouseDrag
+          ? ambientScrollBehavior.copyWith(
+              dragDevices: {
+                ...ambientScrollBehavior.dragDevices,
+                PointerDeviceKind.mouse,
+              },
+            )
+          : ambientScrollBehavior,
+      child: routeThemeChild,
+    );
+
     return AdaptiveSheetScope(
       presentation: presentation,
       theme: widget.theme,
@@ -285,10 +311,7 @@ class _AdaptiveSheetState<T> extends State<_AdaptiveSheet<T>> {
         sheetNavigator: sheetNavigator,
         child: ListenableBuilder(
           listenable: sheetNavigator._changes,
-          child: PagedSheetRouteTheme(
-            data: routeTheme,
-            child: pagedSheet,
-          ),
+          child: sheetChild,
           builder: (context, child) {
             final handlesNativeBack =
                 !kIsWeb && widget.theme.nativeBackBehavior == AdaptiveSheetNativeBackBehavior.popPageOrCloseSheet && sheetNavigator._canPopAnyRoute;
@@ -322,6 +345,7 @@ PagedSheetRoute<T> _buildPageRoute<T>(AdaptiveSheetPage<T> page) {
     bottomSheetPageTransition: page.bottomSheetPageTransition,
     dialogPageTransition: page.dialogPageTransition,
     builder: (context) => _AdaptiveSheetPageRouteScope(
+      key: route._contentKey,
       route: route,
       child: _AdaptiveSheetPageSurface(child: page.child),
     ),
@@ -342,6 +366,12 @@ class _AdaptivePagedSheetRoute<T> extends PagedSheetRoute<T> {
 
   final AdaptiveSheetPageTransition? bottomSheetPageTransition;
   final AdaptiveSheetPageTransition? dialogPageTransition;
+
+  // Smooth Sheets inserts a scroll wrapper when a dialog route becomes a
+  // bottom sheet. Keep the key on the route so the page survives that move.
+  final GlobalKey _contentKey = GlobalKey(
+    debugLabel: 'adaptive-sheet-route-content',
+  );
 
   AdaptiveSheetPageTransition _resolveTransition(BuildContext context) {
     final scope = context.getInheritedWidgetOfExactType<AdaptiveSheetScope>();
@@ -393,6 +423,7 @@ class _AdaptivePagedSheetRoute<T> extends PagedSheetRoute<T> {
 
 class _AdaptiveSheetPageRouteScope extends InheritedWidget {
   const _AdaptiveSheetPageRouteScope({
+    super.key,
     required this.route,
     required super.child,
   });

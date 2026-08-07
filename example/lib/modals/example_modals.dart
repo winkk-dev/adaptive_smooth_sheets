@@ -88,6 +88,11 @@ class _QuickViewModal extends StatelessWidget {
               'between the bottom-sheet and dialog surfaces.',
               style: Theme.of(context).textTheme.bodyLarge,
             ),
+            const SizedBox(height: 16),
+            const SelectableText(
+              'Selection test: drag across this sentence with the mouse. The '
+              'text should be selected instead of dragging the sheet.',
+            ),
           ],
         ),
       ),
@@ -356,7 +361,7 @@ class _ActivityTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.builder(
       padding: BaseModalThemeData.of(context).bodyPadding,
-      itemCount: 18,
+      itemCount: 500,
       itemBuilder: (context, index) => ListTile(
         leading: const Icon(Icons.history),
         title: Text('Activity event ${index + 1}'),
