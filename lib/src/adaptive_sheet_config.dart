@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'adaptive_sheet_native_back_behavior.dart';
+import 'adaptive_sheet_page_transition.dart';
 import 'adaptive_sheet_presentation.dart';
 import 'adaptive_sheet_theme.dart';
 
@@ -35,8 +36,10 @@ class AdaptiveSheetConfig {
     this.useSafeArea,
     this.avoidKeyboardInset,
     this.nativeBackBehavior,
-    this.transitionDuration,
-    this.transitionCurve,
+    this.openCloseTransitionDuration,
+    this.openCloseTransitionCurve,
+    this.bottomSheetPageTransition,
+    this.dialogPageTransition,
   }) : assert(dialogWidth == null || dialogWidth > 0),
        assert(dialogMaxHeight == null || dialogMaxHeight > 0),
        assert(
@@ -119,12 +122,19 @@ class AdaptiveSheetConfig {
   /// This value has no effect on web builds.
   final AdaptiveSheetNativeBackBehavior? nativeBackBehavior;
 
-  /// Overrides the outer modal's
-  /// [AdaptiveSheetThemeData.transitionDuration].
-  final Duration? transitionDuration;
+  /// Overrides [AdaptiveSheetThemeData.openCloseTransitionDuration].
+  final Duration? openCloseTransitionDuration;
 
-  /// Overrides the outer modal's [AdaptiveSheetThemeData.transitionCurve].
-  final Curve? transitionCurve;
+  /// Overrides [AdaptiveSheetThemeData.openCloseTransitionCurve].
+  final Curve? openCloseTransitionCurve;
+
+  /// Overrides [AdaptiveSheetThemeData.bottomSheetPageTransition] for every
+  /// page in this sheet's internal stack.
+  final AdaptiveSheetPageTransition? bottomSheetPageTransition;
+
+  /// Overrides [AdaptiveSheetThemeData.dialogPageTransition] for every page
+  /// in this sheet's internal stack.
+  final AdaptiveSheetPageTransition? dialogPageTransition;
 
   /// Applies this route's overrides to [baseTheme].
   AdaptiveSheetThemeData resolveTheme(AdaptiveSheetThemeData baseTheme) {
@@ -147,8 +157,10 @@ class AdaptiveSheetConfig {
       useSafeArea: useSafeArea,
       avoidKeyboardInset: avoidKeyboardInset,
       nativeBackBehavior: nativeBackBehavior,
-      transitionDuration: transitionDuration,
-      transitionCurve: transitionCurve,
+      openCloseTransitionDuration: openCloseTransitionDuration,
+      openCloseTransitionCurve: openCloseTransitionCurve,
+      bottomSheetPageTransition: bottomSheetPageTransition,
+      dialogPageTransition: dialogPageTransition,
     );
   }
 }

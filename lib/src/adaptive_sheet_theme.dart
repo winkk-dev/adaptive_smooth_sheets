@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import 'adaptive_sheet_native_back_behavior.dart';
+import 'adaptive_sheet_page_transition.dart';
 
 /// Flutter-only defaults for adaptive sheet routes and outer surfaces.
 ///
@@ -35,8 +36,10 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
     this.useSafeArea = true,
     this.avoidKeyboardInset = true,
     this.nativeBackBehavior = AdaptiveSheetNativeBackBehavior.popPageOrCloseSheet,
-    this.transitionDuration = const Duration(milliseconds: 250),
-    this.transitionCurve = Curves.fastEaseInToSlowEaseOut,
+    this.openCloseTransitionDuration = const Duration(milliseconds: 250),
+    this.openCloseTransitionCurve = Curves.fastEaseInToSlowEaseOut,
+    this.bottomSheetPageTransition = const AdaptiveSheetPageTransition.platformDefault(),
+    this.dialogPageTransition = const AdaptiveSheetPageTransition.sharedAxis(),
   }) : assert(dialogBreakpoint >= 0),
        assert(dialogWidth > 0),
        assert(dialogMaxHeight > 0),
@@ -117,15 +120,17 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
   /// dismissal, and explicit close requests always target the complete modal.
   final AdaptiveSheetNativeBackBehavior nativeBackBehavior;
 
-  /// The duration of the outer modal's entrance and exit transitions.
-  ///
-  /// Internal page transitions use Smooth Sheets' platform defaults.
-  final Duration transitionDuration;
+  /// How long the complete modal takes to open and close.
+  final Duration openCloseTransitionDuration;
 
-  /// The curve used by the outer modal's entrance and exit transitions.
-  ///
-  /// Internal page transitions use Smooth Sheets' platform defaults.
-  final Curve transitionCurve;
+  /// The animation curve used when the complete modal opens and closes.
+  final Curve openCloseTransitionCurve;
+
+  /// The default transition between pages in a bottom-sheet presentation.
+  final AdaptiveSheetPageTransition bottomSheetPageTransition;
+
+  /// The default transition between pages in a dialog presentation.
+  final AdaptiveSheetPageTransition dialogPageTransition;
 
   @override
   AdaptiveSheetThemeData copyWith({
@@ -147,8 +152,10 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
     bool? useSafeArea,
     bool? avoidKeyboardInset,
     AdaptiveSheetNativeBackBehavior? nativeBackBehavior,
-    Duration? transitionDuration,
-    Curve? transitionCurve,
+    Duration? openCloseTransitionDuration,
+    Curve? openCloseTransitionCurve,
+    AdaptiveSheetPageTransition? bottomSheetPageTransition,
+    AdaptiveSheetPageTransition? dialogPageTransition,
   }) {
     return AdaptiveSheetThemeData(
       dialogBreakpoint: dialogBreakpoint ?? this.dialogBreakpoint,
@@ -169,8 +176,10 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
       useSafeArea: useSafeArea ?? this.useSafeArea,
       avoidKeyboardInset: avoidKeyboardInset ?? this.avoidKeyboardInset,
       nativeBackBehavior: nativeBackBehavior ?? this.nativeBackBehavior,
-      transitionDuration: transitionDuration ?? this.transitionDuration,
-      transitionCurve: transitionCurve ?? this.transitionCurve,
+      openCloseTransitionDuration: openCloseTransitionDuration ?? this.openCloseTransitionDuration,
+      openCloseTransitionCurve: openCloseTransitionCurve ?? this.openCloseTransitionCurve,
+      bottomSheetPageTransition: bottomSheetPageTransition ?? this.bottomSheetPageTransition,
+      dialogPageTransition: dialogPageTransition ?? this.dialogPageTransition,
     );
   }
 
@@ -234,16 +243,16 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
       useSafeArea: t < 0.5 ? useSafeArea : other.useSafeArea,
       avoidKeyboardInset: t < 0.5 ? avoidKeyboardInset : other.avoidKeyboardInset,
       nativeBackBehavior: t < 0.5 ? nativeBackBehavior : other.nativeBackBehavior,
-      transitionDuration: Duration(
-        microseconds: ui
-            .lerpDouble(
-              transitionDuration.inMicroseconds,
-              other.transitionDuration.inMicroseconds,
-              t,
-            )!
-            .round(),
+      openCloseTransitionDuration: Duration(
+        microseconds: ui.lerpDouble(
+          openCloseTransitionDuration.inMicroseconds,
+          other.openCloseTransitionDuration.inMicroseconds,
+          t,
+        )!.round(),
       ),
-      transitionCurve: t < 0.5 ? transitionCurve : other.transitionCurve,
+      openCloseTransitionCurve: t < 0.5 ? openCloseTransitionCurve : other.openCloseTransitionCurve,
+      bottomSheetPageTransition: t < 0.5 ? bottomSheetPageTransition : other.bottomSheetPageTransition,
+      dialogPageTransition: t < 0.5 ? dialogPageTransition : other.dialogPageTransition,
     );
   }
 }

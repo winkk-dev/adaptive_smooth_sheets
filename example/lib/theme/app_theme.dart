@@ -44,6 +44,8 @@ class AppTheme {
           surfaceColor: colors.surface,
           barrierColor: colors.scrim.withValues(alpha: 0.54),
           nativeBackBehavior: AdaptiveSheetNativeBackBehavior.popPageOrCloseSheet,
+          bottomSheetPageTransition: const AdaptiveSheetPageTransition.platformDefault(),
+          dialogPageTransition: const AdaptiveSheetPageTransition.sharedAxis(),
         ),
         // Application chrome stays independently customizable.
         BaseModalThemeData(

@@ -9,6 +9,7 @@ import 'package:smooth_sheets/smooth_sheets.dart';
 import 'adaptive_sheet_config.dart';
 import 'adaptive_sheet_native_back_behavior.dart';
 import 'adaptive_sheet_page.dart';
+import 'adaptive_sheet_page_transition.dart';
 import 'adaptive_sheet_presentation.dart';
 import 'adaptive_sheet_scope.dart';
 import 'adaptive_sheet_theme.dart';
@@ -57,8 +58,8 @@ class _AdaptiveSheetRoute<T> extends ModalSheetRoute<T> {
          barrierLabel: barrierLabel,
          barrierColor: theme.barrierColor,
          swipeDismissible: theme.swipeDismissible,
-         transitionDuration: theme.transitionDuration,
-         transitionCurve: theme.transitionCurve,
+         transitionDuration: theme.openCloseTransitionDuration,
+         transitionCurve: theme.openCloseTransitionCurve,
          barrierBuilder: _buildAdaptiveSheetBarrier,
          viewportBuilder: (context, child) {
            final presentation = config.presentationPolicy.resolve(
@@ -125,8 +126,8 @@ class _AdaptiveSheetRoute<T> extends ModalSheetRoute<T> {
 
     final curvedAnimation = CurvedAnimation(
       parent: animation,
-      curve: transitionCurve,
-      reverseCurve: transitionCurve.flipped,
+      curve: theme.openCloseTransitionCurve,
+      reverseCurve: theme.openCloseTransitionCurve.flipped,
     );
     return FadeTransition(
       opacity: curvedAnimation,
@@ -318,6 +319,8 @@ PagedSheetRoute<T> _buildPageRoute<T>(AdaptiveSheetPage<T> page) {
   route = _AdaptivePagedSheetRoute<T>(
     settings: page.settings,
     maintainState: page.maintainState,
+    bottomSheetPageTransition: page.bottomSheetPageTransition,
+    dialogPageTransition: page.dialogPageTransition,
     builder: (context) => _AdaptiveSheetPageRouteScope(
       route: route,
       child: _AdaptiveSheetPageSurface(child: page.child),
@@ -331,9 +334,61 @@ PagedSheetRoute<T> _buildPageRoute<T>(AdaptiveSheetPage<T> page) {
 class _AdaptivePagedSheetRoute<T> extends PagedSheetRoute<T> {
   _AdaptivePagedSheetRoute({
     required super.builder,
+    required this.bottomSheetPageTransition,
+    required this.dialogPageTransition,
     super.settings,
     super.maintainState,
   });
+
+  final AdaptiveSheetPageTransition? bottomSheetPageTransition;
+  final AdaptiveSheetPageTransition? dialogPageTransition;
+
+  AdaptiveSheetPageTransition _resolveTransition(BuildContext context) {
+    final scope = context.getInheritedWidgetOfExactType<AdaptiveSheetScope>();
+    if (scope == null) {
+      throw StateError('Adaptive sheet page route is outside AdaptiveSheetScope.');
+    }
+
+    return switch (scope.presentation) {
+      AdaptiveSheetPresentation.bottomSheet => bottomSheetPageTransition ?? scope.theme.bottomSheetPageTransition,
+      AdaptiveSheetPresentation.dialog => dialogPageTransition ?? scope.theme.dialogPageTransition,
+    };
+  }
+
+  @override
+  Duration get transitionDuration {
+    final routeNavigator = navigator;
+    if (routeNavigator == null) {
+      return const Duration(milliseconds: 300);
+    }
+    final duration = _resolveTransition(routeNavigator.context).duration;
+    // Smooth Sheets uses the route animation to finish its page-size
+    // transition activity. A truly zero-duration controller can complete
+    // before that listener is attached, leaving the sheet non-interactive.
+    // One microsecond is still visually immediate but guarantees one tick.
+    return duration == Duration.zero ? const Duration(microseconds: 1) : duration;
+  }
+
+  @override
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final transition = _resolveTransition(context);
+    final builder = transition.builder;
+    if (builder == null) {
+      return super.buildTransitions(
+        context,
+        animation,
+        secondaryAnimation,
+        child,
+      );
+    }
+
+    return builder(context, animation, secondaryAnimation, child);
+  }
 }
 
 class _AdaptiveSheetPageRouteScope extends InheritedWidget {

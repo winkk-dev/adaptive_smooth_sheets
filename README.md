@@ -45,6 +45,9 @@ MaterialApp(
         dialogWidth: 640,
         nativeBackBehavior:
             AdaptiveSheetNativeBackBehavior.popPageOrCloseSheet,
+        bottomSheetPageTransition:
+            AdaptiveSheetPageTransition.platformDefault(),
+        dialogPageTransition: AdaptiveSheetPageTransition.sharedAxis(),
       ),
     ],
   ),
@@ -79,9 +82,40 @@ sheetNavigator.pop();  // Pops an internal page.
 sheetNavigator.close(); // Closes the complete modal.
 ```
 
-The transition duration and curve in `AdaptiveSheetThemeData` and
-`AdaptiveSheetConfig` apply to opening and closing the outer modal. Internal
-pages currently use Smooth Sheets' platform-default transitions.
+Modal open/close and internal-page animations are configured independently.
+`openCloseTransitionDuration` and `openCloseTransitionCurve` on
+`AdaptiveSheetThemeData` or `AdaptiveSheetConfig` affect only opening and
+closing the complete modal.
+
+Internal page transitions resolve separately for the current bottom-sheet or
+dialog presentation. The default is Smooth Sheets' platform transition on a
+bottom sheet and a subtle, directional shared-axis transition in a dialog.
+Override a whole stack with `AdaptiveSheetConfig`:
+
+```dart
+const AdaptiveSheetConfig(
+  dialogPageTransition: AdaptiveSheetPageTransition.none(),
+)
+```
+
+Or override one pushed route with `AdaptiveSheetPage`:
+
+```dart
+AdaptiveSheetNavigator.of(context).push<void>(
+  AdaptiveSheetPage<void>(
+    dialogPageTransition: AdaptiveSheetPageTransition.custom(
+      duration: const Duration(milliseconds: 180),
+      builder: myTransition,
+    ),
+    child: const NextModalContent(),
+  ),
+);
+```
+
+Page overrides take precedence over stack configuration, which takes
+precedence over the application theme. A page override controls that route's
+entrance and reverse-pop animation. Prefer a stack-level override when all
+pages need one coordinated custom transition.
 
 On native platforms, device Back pops an internal page and closes the modal
 only from its first page by default. Escape, barrier taps, swipe dismissal, and

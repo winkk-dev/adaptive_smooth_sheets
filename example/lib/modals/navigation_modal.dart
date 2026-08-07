@@ -36,6 +36,7 @@ class _DirectionPageState extends State<_DirectionPage> {
         child: Column(
           key: const ValueKey('navigation-step-1'),
           crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
             const _StepIcon(icon: Icons.route_outlined),
             const SizedBox(height: 20),
@@ -103,6 +104,7 @@ class _BehaviorPageState extends State<_BehaviorPage> {
       body: BaseModalBody(
         child: Column(
           key: const ValueKey('navigation-step-2'),
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const _StepIcon(icon: Icons.tune),
@@ -167,6 +169,7 @@ class _ReviewPage extends StatelessWidget {
       body: BaseModalBody(
         child: Column(
           key: const ValueKey('navigation-step-3'),
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const _StepIcon(icon: Icons.task_alt),

@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import 'adaptive_sheet_page_transition.dart';
+
 /// Describes one page in an adaptive sheet's internal navigation stack.
 ///
 /// The package converts this Flutter-only description into its private Smooth
@@ -12,6 +14,8 @@ class AdaptiveSheetPage<T> {
     required this.child,
     this.settings,
     this.maintainState = true,
+    this.bottomSheetPageTransition,
+    this.dialogPageTransition,
   });
 
   /// The content displayed for this page.
@@ -22,4 +26,16 @@ class AdaptiveSheetPage<T> {
 
   /// Whether this page remains mounted while another page covers it.
   final bool maintainState;
+
+  /// Overrides the bottom-sheet page transition for this route.
+  ///
+  /// When null, the stack-level configuration and then the package theme are
+  /// consulted.
+  final AdaptiveSheetPageTransition? bottomSheetPageTransition;
+
+  /// Overrides the dialog page transition for this route.
+  ///
+  /// When null, the stack-level configuration and then the package theme are
+  /// consulted.
+  final AdaptiveSheetPageTransition? dialogPageTransition;
 }
