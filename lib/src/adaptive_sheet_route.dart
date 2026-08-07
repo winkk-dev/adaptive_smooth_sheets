@@ -250,6 +250,7 @@ class _AdaptiveSheetState<T> extends State<_AdaptiveSheet<T>> {
     );
 
     final pagedSheet = PagedSheet(
+      physics: widget.theme.bottomSheetPhysics,
       padding: EdgeInsets.fromLTRB(
         safePadding.left,
         0,

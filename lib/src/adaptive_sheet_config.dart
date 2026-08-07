@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smooth_sheets/smooth_sheets.dart' show SheetPhysics;
 
 import 'adaptive_sheet_native_back_behavior.dart';
 import 'adaptive_sheet_page_transition.dart';
@@ -34,6 +35,7 @@ class AdaptiveSheetConfig {
     this.enableDrag,
     this.enableMouseDrag,
     this.swipeDismissible,
+    this.bottomSheetPhysics,
     this.useSafeArea,
     this.avoidKeyboardInset,
     this.nativeBackBehavior,
@@ -115,6 +117,9 @@ class AdaptiveSheetConfig {
   /// Overrides [AdaptiveSheetThemeData.swipeDismissible].
   final bool? swipeDismissible;
 
+  /// Overrides [AdaptiveSheetThemeData.bottomSheetPhysics].
+  final SheetPhysics? bottomSheetPhysics;
+
   /// Overrides [AdaptiveSheetThemeData.useSafeArea].
   final bool? useSafeArea;
 
@@ -159,6 +164,7 @@ class AdaptiveSheetConfig {
       enableDrag: enableDrag,
       enableMouseDrag: enableMouseDrag,
       swipeDismissible: swipeDismissible,
+      bottomSheetPhysics: bottomSheetPhysics,
       useSafeArea: useSafeArea,
       avoidKeyboardInset: avoidKeyboardInset,
       nativeBackBehavior: nativeBackBehavior,

@@ -1,5 +1,7 @@
 library;
 
+export 'package:smooth_sheets/smooth_sheets.dart' show BouncingSheetPhysics, ClampingSheetPhysics, SheetPhysics;
+
 export 'src/adaptive_sheet_config.dart';
 export 'src/adaptive_sheet_native_back_behavior.dart';
 export 'src/adaptive_sheet_page.dart';

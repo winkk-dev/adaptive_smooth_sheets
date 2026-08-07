@@ -129,6 +129,7 @@ void main() {
       surfaceColor: Colors.red,
       barrierDismissible: true,
       enableMouseDrag: false,
+      bottomSheetPhysics: BouncingSheetPhysics(),
     );
     late AdaptiveSheetScope resolvedScope;
 
@@ -143,6 +144,7 @@ void main() {
         surfaceColor: Colors.blue,
         barrierDismissible: false,
         enableMouseDrag: true,
+        bottomSheetPhysics: ClampingSheetPhysics(),
       ),
       builder: (context) {
         final scope = AdaptiveSheetScope.of(context);
@@ -162,6 +164,10 @@ void main() {
     expect(resolvedScope.theme.dialogWidth, 520);
     expect(resolvedScope.theme.surfaceColor, Colors.blue);
     expect(resolvedScope.theme.enableMouseDrag, isTrue);
+    expect(
+      resolvedScope.theme.bottomSheetPhysics,
+      isA<ClampingSheetPhysics>(),
+    );
     expect(resolvedScope.theme.dialogMaxHeight, globalTheme.dialogMaxHeight);
     expect(
       tester.getSize(find.byKey(const ValueKey('overridden-content'))).width,
@@ -569,6 +575,61 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Second page'), findsNothing);
+  });
+
+  testWidgets('upward overdrag keeps the bottom sheet flush with the viewport', (
+    tester,
+  ) async {
+    _configureView(tester, size: const Size(500, 900));
+    await _pumpLauncher(
+      tester,
+      builder: (context) => const SizedBox(
+        key: ValueKey('clamped-sheet-content'),
+        height: 320,
+      ),
+    );
+    await _openSheet(tester);
+
+    final content = find.byKey(const ValueKey('clamped-sheet-content'));
+    final initialRect = tester.getRect(content);
+    final gesture = await tester.startGesture(tester.getCenter(content));
+    await gesture.moveBy(const Offset(0, -200));
+    await tester.pump();
+
+    expect(tester.getRect(content), initialRect);
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(content, findsOneWidget);
+  });
+
+  testWidgets('route physics can opt into elastic upward overdrag', (
+    tester,
+  ) async {
+    _configureView(tester, size: const Size(500, 900));
+    await _pumpLauncher(
+      tester,
+      config: const AdaptiveSheetConfig(
+        bottomSheetPhysics: BouncingSheetPhysics(),
+      ),
+      builder: (context) => const SizedBox(
+        key: ValueKey('bouncing-sheet-content'),
+        height: 320,
+      ),
+    );
+    await _openSheet(tester);
+
+    final content = find.byKey(const ValueKey('bouncing-sheet-content'));
+    final initialRect = tester.getRect(content);
+    final gesture = await tester.startGesture(tester.getCenter(content));
+    await gesture.moveBy(const Offset(0, -200));
+    await tester.pump();
+
+    expect(tester.getRect(content).bottom, lessThan(initialRect.bottom));
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(tester.getRect(content), initialRect);
   });
 
   testWidgets('mouse dragging dismisses a bottom sheet', (tester) async {

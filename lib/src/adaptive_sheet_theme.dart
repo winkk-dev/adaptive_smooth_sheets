@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:smooth_sheets/smooth_sheets.dart';
 
 import 'adaptive_sheet_native_back_behavior.dart';
 import 'adaptive_sheet_page_transition.dart';
@@ -34,6 +35,7 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
     this.enableDrag = true,
     this.enableMouseDrag = true,
     this.swipeDismissible = true,
+    this.bottomSheetPhysics = const ClampingSheetPhysics(),
     this.useSafeArea = true,
     this.avoidKeyboardInset = true,
     this.nativeBackBehavior = AdaptiveSheetNativeBackBehavior.popPageOrCloseSheet,
@@ -112,6 +114,12 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
   /// Dragging must also be enabled for the gesture to originate in the sheet.
   final bool swipeDismissible;
 
+  /// How the bottom sheet behaves at and beyond its draggable bounds.
+  ///
+  /// The default clamps the sheet to its bounds. Use [BouncingSheetPhysics] to
+  /// opt into elastic overdrag.
+  final SheetPhysics bottomSheetPhysics;
+
   /// Whether presentations avoid platform safe areas.
   ///
   /// Bottom sheets reserve the top inset and pad their content on the other
@@ -157,6 +165,7 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
     bool? enableDrag,
     bool? enableMouseDrag,
     bool? swipeDismissible,
+    SheetPhysics? bottomSheetPhysics,
     bool? useSafeArea,
     bool? avoidKeyboardInset,
     AdaptiveSheetNativeBackBehavior? nativeBackBehavior,
@@ -182,6 +191,7 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
       enableDrag: enableDrag ?? this.enableDrag,
       enableMouseDrag: enableMouseDrag ?? this.enableMouseDrag,
       swipeDismissible: swipeDismissible ?? this.swipeDismissible,
+      bottomSheetPhysics: bottomSheetPhysics ?? this.bottomSheetPhysics,
       useSafeArea: useSafeArea ?? this.useSafeArea,
       avoidKeyboardInset: avoidKeyboardInset ?? this.avoidKeyboardInset,
       nativeBackBehavior: nativeBackBehavior ?? this.nativeBackBehavior,
@@ -250,6 +260,7 @@ class AdaptiveSheetThemeData extends ThemeExtension<AdaptiveSheetThemeData> {
       enableDrag: t < 0.5 ? enableDrag : other.enableDrag,
       enableMouseDrag: t < 0.5 ? enableMouseDrag : other.enableMouseDrag,
       swipeDismissible: t < 0.5 ? swipeDismissible : other.swipeDismissible,
+      bottomSheetPhysics: t < 0.5 ? bottomSheetPhysics : other.bottomSheetPhysics,
       useSafeArea: t < 0.5 ? useSafeArea : other.useSafeArea,
       avoidKeyboardInset: t < 0.5 ? avoidKeyboardInset : other.avoidKeyboardInset,
       nativeBackBehavior: t < 0.5 ? nativeBackBehavior : other.nativeBackBehavior,
