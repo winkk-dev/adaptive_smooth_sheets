@@ -2,7 +2,7 @@ import 'package:adaptive_smooth_sheets/adaptive_smooth_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
-import 'base_modal.dart';
+import 'base_modal/base_modal.dart';
 
 /// Shows the directly composed Reactive Forms example.
 ///

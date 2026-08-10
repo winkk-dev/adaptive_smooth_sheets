@@ -1,7 +1,7 @@
 import 'package:adaptive_smooth_sheets/adaptive_smooth_sheets.dart';
 import 'package:flutter/material.dart';
 
-import '../modals/base_modal_theme.dart';
+import '../modals/base_modal/base_modal_theme.dart';
 
 /// Material and modal themes for the example application.
 class AppTheme {

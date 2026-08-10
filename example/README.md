@@ -18,10 +18,12 @@ bottom-sheet and dialog presentation.
 
 The reusable application-side pieces are split into:
 
-- `lib/modals/base_modal.dart` for project chrome and explicit `singleChild`,
+- `lib/modals/base_modal/base_modal.dart` for the project chrome entry point.
+- `lib/modals/base_modal/base_modal_body.dart` for explicit `singleChild`,
   `list`, `slivers`, and `custom` body strategies.
-- `lib/modals/base_tab_modal.dart` for the current concrete tab composition.
-- `lib/modals/base_modal_theme.dart` for application-only styling.
+- `lib/modals/base_modal/base_tab_modal.dart` for the current concrete tab
+  composition.
+- `lib/modals/base_modal/base_modal_theme.dart` for application-only styling.
 - `lib/theme/app_theme.dart` for Material, package, and modal theme setup.
 
 The form and tab abstractions are deliberately modest. Their shared API will be

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Project-level modal chrome used by the example application's `BaseModal`.
+/// Project-level modal chrome used by the example application's base modal.
 ///
 /// Responsive route geometry and behavior belong to
 /// `AdaptiveSheetThemeData`; this extension contains only application UI.

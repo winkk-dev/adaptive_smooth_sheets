@@ -1,8 +1,7 @@
 import 'dart:async';
 
 import 'package:adaptive_smooth_sheets/adaptive_smooth_sheets.dart';
-import 'package:example/modals/base_modal.dart';
-import 'package:example/modals/base_modal_theme.dart';
+import 'package:example/modals/base_modal/base_modal.dart';
 import 'package:example/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

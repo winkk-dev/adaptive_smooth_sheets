@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:adaptive_smooth_sheets/adaptive_smooth_sheets.dart';
 import 'package:flutter/material.dart';
 
-import 'base_modal.dart';
+import 'base_modal/base_modal.dart';
 
 /// Shows a three-page flow using the package-owned sheet navigator.
 Future<void> showNavigationModal(BuildContext context) {

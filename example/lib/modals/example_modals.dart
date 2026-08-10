@@ -1,9 +1,8 @@
 import 'package:adaptive_smooth_sheets/adaptive_smooth_sheets.dart';
 import 'package:flutter/material.dart';
 
-import 'base_modal.dart';
-import 'base_modal_theme.dart';
-import 'base_tab_modal.dart';
+import 'base_modal/base_modal.dart';
+import 'base_modal/base_tab_modal.dart';
 
 /// Shows a compact modal using only project-level chrome.
 Future<void> showQuickViewModal(BuildContext context) {

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'base_modal.dart';
 
-/// A small project-level tab composition for adaptive modal content.
+/// Project-level tab composition for adaptive modal content.
 ///
 /// This is intentionally concrete rather than an abstract form/tab framework;
 /// that API will be revisited during the dedicated simplification task.
