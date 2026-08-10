@@ -577,6 +577,25 @@ void main() {
     expect(find.text('Second page'), findsNothing);
   });
 
+  testWidgets('dragging a tall dialog does not dismiss it', (tester) async {
+    _configureView(tester, size: const Size(1200, 900));
+    await _pumpLauncher(
+      tester,
+      builder: (context) => const ColoredBox(
+        key: ValueKey('tall-dialog-content'),
+        color: Colors.transparent,
+        child: SizedBox(height: 800),
+      ),
+    );
+    await _openSheet(tester);
+
+    final content = find.byKey(const ValueKey('tall-dialog-content'));
+    await tester.drag(content, const Offset(0, 700));
+    await tester.pumpAndSettle();
+
+    expect(content, findsOneWidget);
+  });
+
   testWidgets('upward overdrag keeps the bottom sheet flush with the viewport', (
     tester,
   ) async {

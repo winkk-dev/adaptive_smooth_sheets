@@ -58,7 +58,6 @@ class _AdaptiveSheetRoute<T> extends ModalSheetRoute<T> {
          barrierDismissible: theme.barrierDismissible,
          barrierLabel: barrierLabel,
          barrierColor: theme.barrierColor,
-         swipeDismissible: theme.swipeDismissible,
          transitionDuration: theme.openCloseTransitionDuration,
          transitionCurve: theme.openCloseTransitionCurve,
          barrierBuilder: _buildAdaptiveSheetBarrier,
@@ -90,6 +89,12 @@ class _AdaptiveSheetRoute<T> extends ModalSheetRoute<T> {
   final AdaptiveSheetThemeData theme;
   VoidCallback? _closeFromBarrier;
   bool Function()? _canClose;
+
+  @override
+  bool get swipeDismissible {
+    final routeContext = navigator?.context;
+    return theme.swipeDismissible && routeContext != null && _presentationOf(routeContext) == AdaptiveSheetPresentation.bottomSheet;
+  }
 
   @override
   RoutePopDisposition get popDisposition {
@@ -278,12 +283,7 @@ class _AdaptiveSheetState<T> extends State<_AdaptiveSheet<T>> {
               scrollSyncMode: SheetScrollHandlingBehavior.onlyFromTop,
             )
           : SheetScrollConfiguration.disabled,
-      dragConfiguration: isBottomSheet && widget.theme.enableDrag
-          ? const SheetDragConfiguration()
-          : const SheetDragConfiguration(
-              hitTestBehavior: HitTestBehavior.deferToChild,
-              deviceKinds: {},
-            ),
+      dragConfiguration: isBottomSheet && widget.theme.enableDrag ? const SheetDragConfiguration() : SheetDragConfiguration.disabled,
     );
 
     final routeThemeChild = PagedSheetRouteTheme(
