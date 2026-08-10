@@ -9,10 +9,10 @@ import 'adaptive_sheet_theme.dart';
 class AdaptiveSheetScope extends InheritedWidget {
   /// Creates an adaptive sheet scope.
   const AdaptiveSheetScope({
+    super.key,
     required this.presentation,
     required this.theme,
     required super.child,
-    super.key,
   });
 
   /// The presentation currently selected for the open route.

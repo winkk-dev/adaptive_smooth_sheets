@@ -17,6 +17,8 @@ content element and its widget, form, and scroll state.
 - `AdaptiveSheetScope` for presentation-aware application chrome.
 - `AdaptiveSheetScaffold` for fixed top and bottom bars without importing
   `smooth_sheets` in application code.
+- An automatic primary `AdaptiveSheetScrollController` that remains compatible
+  while an open modal switches between dialog and bottom sheet.
 - `AdaptiveSheetPage` and `AdaptiveSheetNavigator` for nested modal navigation
   backed by Smooth Sheets' paged-sheet behavior.
 - `AdaptiveSheetPopScope` for sheet-aware dismissal guards without leaking the
@@ -171,6 +173,14 @@ integration.
 
 Headers, footers, drag handles, buttons, content padding, forms, and other
 application-specific modal chrome intentionally remain consumer concerns.
+
+Every `AdaptiveSheetPage` automatically provides an
+`AdaptiveSheetScrollController` as its primary vertical scroll controller. It
+supplies normal scrolling in dialogs and Smooth Sheets' scroll-to-drag handoff
+in bottom sheets, including desktop windows resized below the dialog
+breakpoint. Use `AdaptiveSheetScrollController.of(context)` from page content
+when an action needs to scroll the modal programmatically. No wrapper is
+required in consumer modal scaffolds.
 
 The [`example`](example/) application shows one way to build that consumer
 layer, including project-level modal chrome, tabs, lazy content, guarded

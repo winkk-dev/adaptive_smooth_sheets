@@ -48,7 +48,7 @@ class _ExampleAppState extends State<ExampleApp> {
 /// Launcher for the focused adaptive modal examples.
 class ExampleHomePage extends StatelessWidget {
   /// Creates the example launcher.
-  const ExampleHomePage({required this.onToggleTheme, super.key});
+  const ExampleHomePage({super.key, required this.onToggleTheme});
 
   /// Toggles the MaterialApp theme mode.
   final VoidCallback onToggleTheme;

@@ -9,8 +9,8 @@ part of 'adaptive_sheet_route.dart';
 class AdaptiveSheetPopScope<T> extends StatefulWidget {
   /// Creates a scope that coordinates modal pops and sheet swipe gestures.
   const AdaptiveSheetPopScope({
-    required this.child,
     super.key,
+    required this.child,
     this.canPop = true,
     this.onPopInvokedWithResult,
   });
@@ -46,6 +46,7 @@ class _AdaptiveSheetPopScopeState<T> extends State<AdaptiveSheetPopScope<T>> {
       return;
     }
 
+    // Keep the guard bound to its current internal page.
     _unregister();
     _sheetNavigator = sheetNavigator;
     _registration = _AdaptiveSheetPopRegistration(

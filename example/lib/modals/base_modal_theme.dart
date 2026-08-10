@@ -19,7 +19,10 @@ class BaseModalThemeData extends ThemeExtension<BaseModalThemeData> {
     this.headerPadding = const EdgeInsets.fromLTRB(24, 12, 16, 16),
     this.bodyPadding = const EdgeInsets.fromLTRB(24, 20, 24, 32),
     this.footerPadding = const EdgeInsets.fromLTRB(24, 16, 24, 20),
-  });
+    this.footerOverflowGradientHeight = 24,
+    this.footerOverflowGradientDuration = const Duration(milliseconds: 200),
+  }) : assert(footerOverflowGradientHeight >= 0),
+       assert(footerOverflowGradientDuration >= Duration.zero);
 
   /// Returns the registered extension or colors derived from the Material
   /// theme when the example is embedded without `AppTheme`.
@@ -70,6 +73,12 @@ class BaseModalThemeData extends ThemeExtension<BaseModalThemeData> {
   /// The divider above the footer.
   final BorderSide footerDivider;
 
+  /// Height of the fade indicating that body content continues below.
+  final double footerOverflowGradientHeight;
+
+  /// Animation duration of the footer overflow fade.
+  final Duration footerOverflowGradientDuration;
+
   @override
   BaseModalThemeData copyWith({
     Color? dragHandleColor,
@@ -83,6 +92,8 @@ class BaseModalThemeData extends ThemeExtension<BaseModalThemeData> {
     Color? footerBackgroundColor,
     EdgeInsets? footerPadding,
     BorderSide? footerDivider,
+    double? footerOverflowGradientHeight,
+    Duration? footerOverflowGradientDuration,
   }) {
     return BaseModalThemeData(
       dragHandleColor: dragHandleColor ?? this.dragHandleColor,
@@ -96,6 +107,8 @@ class BaseModalThemeData extends ThemeExtension<BaseModalThemeData> {
       footerBackgroundColor: footerBackgroundColor ?? this.footerBackgroundColor,
       footerPadding: footerPadding ?? this.footerPadding,
       footerDivider: footerDivider ?? this.footerDivider,
+      footerOverflowGradientHeight: footerOverflowGradientHeight ?? this.footerOverflowGradientHeight,
+      footerOverflowGradientDuration: footerOverflowGradientDuration ?? this.footerOverflowGradientDuration,
     );
   }
 
@@ -133,6 +146,8 @@ class BaseModalThemeData extends ThemeExtension<BaseModalThemeData> {
       )!,
       footerPadding: EdgeInsets.lerp(footerPadding, other.footerPadding, t)!,
       footerDivider: BorderSide.lerp(footerDivider, other.footerDivider, t),
+      footerOverflowGradientHeight: footerOverflowGradientHeight + (other.footerOverflowGradientHeight - footerOverflowGradientHeight) * t,
+      footerOverflowGradientDuration: t < 0.5 ? footerOverflowGradientDuration : other.footerOverflowGradientDuration,
     );
   }
 }

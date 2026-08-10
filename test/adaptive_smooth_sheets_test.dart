@@ -88,35 +88,64 @@ void main() {
     },
   );
 
-  testWidgets('scroll position survives responsive reparenting', (
+  testWidgets('page provides stable primary scrolling across presentations', (
     tester,
   ) async {
     _configureView(tester, size: const Size(500, 800));
+    AdaptiveSheetScrollController? firstController;
+    AdaptiveSheetScrollController? currentController;
 
     await _pumpLauncher(
       tester,
-      builder: (context) => const SizedBox(
-        height: 300,
-        child: _ScrollProbe(key: ValueKey('scroll-probe')),
-      ),
+      theme: ThemeData(platform: TargetPlatform.macOS),
+      builder: (context) {
+        currentController = AdaptiveSheetScrollController.of(context);
+        firstController ??= currentController;
+        return SizedBox(
+          height: 300,
+          child: ListView.builder(
+            key: const ValueKey('primary-scroll-list'),
+            itemExtent: 48,
+            itemCount: 30,
+            itemBuilder: (context, index) => Text('Item $index'),
+          ),
+        );
+      },
     );
     await _openSheet(tester);
 
-    final stateBefore = tester.state<_ScrollProbeState>(
-      find.byKey(const ValueKey('scroll-probe')),
+    final listContext = tester.element(
+      find.byKey(const ValueKey('primary-scroll-list')),
     );
-    stateBefore.controller.jumpTo(320);
+    expect(currentController, same(firstController));
+    expect(PrimaryScrollController.of(listContext), same(firstController));
+
+    firstController!.jumpTo(320);
     await tester.pump();
-    expect(stateBefore.controller.offset, 320);
+    expect(firstController!.offset, 320);
 
     tester.view.physicalSize = const Size(1200, 800);
     await tester.pumpAndSettle();
 
-    final stateAfter = tester.state<_ScrollProbeState>(
-      find.byKey(const ValueKey('scroll-probe')),
+    expect(currentController, same(firstController));
+    expect(
+      PrimaryScrollController.of(
+        tester.element(find.byKey(const ValueKey('primary-scroll-list'))),
+      ),
+      same(firstController),
     );
-    expect(identical(stateAfter, stateBefore), isTrue);
-    expect(stateAfter.controller.offset, 320);
+    expect(firstController!.offset, 320);
+
+    tester.view.physicalSize = const Size(500, 800);
+    await tester.pumpAndSettle();
+
+    expect(
+      PrimaryScrollController.of(
+        tester.element(find.byKey(const ValueKey('primary-scroll-list'))),
+      ),
+      same(firstController),
+    );
+    expect(firstController!.offset, 320);
   });
 
   testWidgets('global theme defaults and per-route overrides are layered', (
@@ -854,33 +883,6 @@ class _StateProbeState extends State<_StateProbe> {
   }
 }
 
-class _ScrollProbe extends StatefulWidget {
-  const _ScrollProbe({super.key});
-
-  @override
-  State<_ScrollProbe> createState() => _ScrollProbeState();
-}
-
-class _ScrollProbeState extends State<_ScrollProbe> {
-  final ScrollController controller = ScrollController();
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      controller: controller,
-      itemExtent: 48,
-      itemCount: 30,
-      itemBuilder: (context, index) => Text('Item $index'),
-    );
-  }
-}
-
 class _NavigationTestApp extends StatefulWidget {
   const _NavigationTestApp({
     this.config = const AdaptiveSheetConfig(),
@@ -1121,7 +1123,7 @@ class _SecondPopupPage extends StatelessWidget {
 }
 
 class _PopupDropdown extends StatelessWidget {
-  const _PopupDropdown({required this.labelPrefix, super.key});
+  const _PopupDropdown({super.key, required this.labelPrefix});
 
   final String labelPrefix;
 

@@ -11,10 +11,10 @@ import 'base_modal.dart';
 class BaseTabModal extends StatelessWidget {
   /// Creates a tabbed modal.
   const BaseTabModal({
+    super.key,
     required this.title,
     required this.tabs,
     required this.children,
-    super.key,
     this.subtitle,
     this.footer,
   }) : assert(tabs.length == children.length),
@@ -38,6 +38,7 @@ class BaseTabModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final availableHeight = MediaQuery.sizeOf(context).height - MediaQuery.viewPaddingOf(context).vertical;
+    // TabBarView needs a finite viewport that still fits shorter windows.
     final bodyHeight = math.max(220.0, math.min(480.0, availableHeight * 0.56));
 
     return DefaultTabController(
@@ -51,9 +52,12 @@ class BaseTabModal extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           tabs: tabs,
         ),
-        body: SizedBox(
-          height: bodyHeight,
-          child: TabBarView(children: children),
+        // Each tab body owns its scrolling; no outer scroll view.
+        body: BaseModalBody.custom(
+          child: SizedBox(
+            height: bodyHeight,
+            child: TabBarView(children: children),
+          ),
         ),
         footer: footer,
       ),

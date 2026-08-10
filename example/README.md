@@ -18,7 +18,8 @@ bottom-sheet and dialog presentation.
 
 The reusable application-side pieces are split into:
 
-- `lib/modals/base_modal.dart` for project chrome and explicit body scrolling.
+- `lib/modals/base_modal.dart` for project chrome and explicit `singleChild`,
+  `list`, `slivers`, and `custom` body strategies.
 - `lib/modals/base_tab_modal.dart` for the current concrete tab composition.
 - `lib/modals/base_modal_theme.dart` for application-only styling.
 - `lib/theme/app_theme.dart` for Material, package, and modal theme setup.

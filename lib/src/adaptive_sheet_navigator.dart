@@ -82,6 +82,7 @@ class AdaptiveSheetNavigator {
     unawaited(_navigatorKey.currentState!.maybePop());
   }
 
+  // Guards on covered pages must not block the currently visible page.
   Iterable<_AdaptiveSheetPopRegistration> get _currentPopRegistrations {
     final currentRoute = _currentPageRoute;
     return _popRegistrations.where(

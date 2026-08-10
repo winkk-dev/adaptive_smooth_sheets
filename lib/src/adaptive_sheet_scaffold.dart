@@ -11,8 +11,8 @@ import 'adaptive_sheet_scope.dart';
 class AdaptiveSheetScaffold extends StatelessWidget {
   /// Creates an adaptive sheet content scaffold.
   const AdaptiveSheetScaffold({
-    required this.body,
     super.key,
+    required this.body,
     this.topBar,
     this.bottomBar,
     this.backgroundColor,

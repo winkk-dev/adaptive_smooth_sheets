@@ -13,9 +13,9 @@ const baseModalDragHandleKey = Key('base-modal-drag-handle');
 class BaseModal extends StatelessWidget {
   /// Creates a project-styled modal surface.
   const BaseModal({
+    super.key,
     required this.title,
     required this.body,
-    super.key,
     this.subtitle,
     this.leading,
     this.showBackButton = true,
@@ -35,7 +35,7 @@ class BaseModal extends StatelessWidget {
   final String? subtitle;
 
   /// The body widget, whose scrolling strategy is chosen by the caller.
-  final Widget body;
+  final BaseModalBody body;
 
   /// An optional widget before the title.
   ///
@@ -68,8 +68,8 @@ class BaseModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AdaptiveSheetScaffold(
-      topBar: BaseModalHeader(
+    return _BaseModalLayout(
+      header: BaseModalHeader(
         title: title,
         subtitle: subtitle,
         leading: leading,
@@ -81,36 +81,272 @@ class BaseModal extends StatelessWidget {
         onClosePressed: onClosePressed,
         showDragHandle: showDragHandle,
       ),
-      bottomBar: footer,
+      footer: footer,
       body: body,
     );
   }
 }
 
-/// An explicitly padded or eager-scrollable modal body.
-class BaseModalBody extends StatelessWidget {
-  /// Creates a non-scrolling padded body.
-  const BaseModalBody({required this.child, super.key, this.padding}) : scrollable = false;
+/// An explicit content and scrolling strategy for [BaseModal].
+///
+/// Managed strategies create exactly one vertical scroll view, apply project
+/// padding, dismiss the keyboard on drag by default, and participate in Smooth
+/// Sheets' scroll-to-drag handoff. [BaseModalBody.custom] is the escape hatch
+/// for layouts such as a [TabBarView] that own their internal scrolling.
+sealed class BaseModalBody extends StatelessWidget {
+  const BaseModalBody({super.key});
 
-  /// Creates a padded body inside a [SingleChildScrollView].
-  const BaseModalBody.scrollable({required this.child, super.key, this.padding}) : scrollable = true;
+  /// Creates eager content that scrolls only when its height is constrained.
+  const factory BaseModalBody.singleChild({
+    required Widget child,
+    Key? key,
+    EdgeInsetsGeometry? padding,
+    ScrollPhysics? physics,
+    ScrollViewKeyboardDismissBehavior keyboardDismissBehavior,
+  }) = _SingleChildBaseModalBody;
 
-  /// The body content.
+  /// Creates a lazy list with optional separators.
+  const factory BaseModalBody.list({
+    required int itemCount,
+    required IndexedWidgetBuilder itemBuilder,
+    Key? key,
+    IndexedWidgetBuilder? separatorBuilder,
+    EdgeInsetsGeometry? padding,
+    ScrollPhysics? physics,
+    ScrollViewKeyboardDismissBehavior keyboardDismissBehavior,
+  }) = _ListBaseModalBody;
+
+  /// Creates a lazy custom scroll view from slivers.
+  const factory BaseModalBody.slivers({
+    required List<Widget> slivers,
+    Key? key,
+    EdgeInsetsGeometry? padding,
+    ScrollPhysics? physics,
+    ScrollViewKeyboardDismissBehavior keyboardDismissBehavior,
+  }) = _SliversBaseModalBody;
+
+  /// Uses [child] without adding padding or another scroll view.
+  ///
+  /// Descendant vertical scroll views that do not provide their own controller
+  /// still inherit the modal's coordinated primary scroll controller.
+  const factory BaseModalBody.custom({
+    required Widget child,
+    Key? key,
+  }) = _CustomBaseModalBody;
+}
+
+final class _SingleChildBaseModalBody extends BaseModalBody {
+  const _SingleChildBaseModalBody({
+    super.key,
+    required this.child,
+    this.padding,
+    this.physics,
+    this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.onDrag,
+  });
+
   final Widget child;
-
-  /// Optional padding overriding [BaseModalThemeData.bodyPadding].
-  final EdgeInsets? padding;
-
-  /// Whether to eagerly scroll [child].
-  final bool scrollable;
+  final EdgeInsetsGeometry? padding;
+  final ScrollPhysics? physics;
+  final ScrollViewKeyboardDismissBehavior keyboardDismissBehavior;
 
   @override
   Widget build(BuildContext context) {
-    final padded = Padding(
+    return SingleChildScrollView(
       padding: padding ?? BaseModalThemeData.of(context).bodyPadding,
+      physics: physics,
+      keyboardDismissBehavior: keyboardDismissBehavior,
       child: child,
     );
-    return scrollable ? SingleChildScrollView(child: padded) : padded;
+  }
+}
+
+final class _ListBaseModalBody extends BaseModalBody {
+  const _ListBaseModalBody({
+    super.key,
+    required this.itemCount,
+    required this.itemBuilder,
+    this.separatorBuilder,
+    this.padding,
+    this.physics,
+    this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.onDrag,
+  }) : assert(itemCount >= 0);
+
+  final int itemCount;
+  final IndexedWidgetBuilder itemBuilder;
+  final IndexedWidgetBuilder? separatorBuilder;
+  final EdgeInsetsGeometry? padding;
+  final ScrollPhysics? physics;
+  final ScrollViewKeyboardDismissBehavior keyboardDismissBehavior;
+
+  @override
+  Widget build(BuildContext context) {
+    final effectivePadding = padding ?? BaseModalThemeData.of(context).bodyPadding;
+    final separatorBuilder = this.separatorBuilder;
+    if (separatorBuilder != null) {
+      return ListView.separated(
+        padding: effectivePadding,
+        physics: physics,
+        keyboardDismissBehavior: keyboardDismissBehavior,
+        itemCount: itemCount,
+        itemBuilder: itemBuilder,
+        separatorBuilder: separatorBuilder,
+      );
+    }
+
+    return ListView.builder(
+      padding: effectivePadding,
+      physics: physics,
+      keyboardDismissBehavior: keyboardDismissBehavior,
+      itemCount: itemCount,
+      itemBuilder: itemBuilder,
+    );
+  }
+}
+
+final class _SliversBaseModalBody extends BaseModalBody {
+  const _SliversBaseModalBody({
+    super.key,
+    required this.slivers,
+    this.padding,
+    this.physics,
+    this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.onDrag,
+  });
+
+  final List<Widget> slivers;
+  final EdgeInsetsGeometry? padding;
+  final ScrollPhysics? physics;
+  final ScrollViewKeyboardDismissBehavior keyboardDismissBehavior;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      physics: physics,
+      keyboardDismissBehavior: keyboardDismissBehavior,
+      slivers: [
+        SliverPadding(
+          padding: padding ?? BaseModalThemeData.of(context).bodyPadding,
+          // Group all slivers under one shared outer padding.
+          sliver: SliverMainAxisGroup(slivers: slivers),
+        ),
+      ],
+    );
+  }
+}
+
+final class _CustomBaseModalBody extends BaseModalBody {
+  const _CustomBaseModalBody({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => child;
+}
+
+/// Internal stateful shell for scrolling and the footer overflow fade.
+class _BaseModalLayout extends StatefulWidget {
+  const _BaseModalLayout({
+    required this.header,
+    required this.body,
+    this.footer,
+  });
+
+  final Widget header;
+  final BaseModalBody body;
+  final Widget? footer;
+
+  @override
+  State<_BaseModalLayout> createState() => _BaseModalLayoutState();
+}
+
+class _BaseModalLayoutState extends State<_BaseModalLayout> {
+  // Whether vertical content remains below the visible body.
+  var _canScrollForward = false;
+
+  bool _handleScrollMetrics(ScrollMetrics metrics) {
+    if (axisDirectionToAxis(metrics.axisDirection) != Axis.vertical) {
+      return false;
+    }
+
+    final canScrollForward = metrics.extentAfter > 0.5;
+    if (canScrollForward != _canScrollForward) {
+      setState(() => _canScrollForward = canScrollForward);
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final modalTheme = BaseModalThemeData.of(context);
+    final footer = widget.footer;
+
+    return AdaptiveSheetScaffold(
+      topBar: widget.header,
+      bottomBar: footer == null
+          ? null
+          : _BaseModalOverflowFooter(
+              showGradient: _canScrollForward,
+              theme: modalTheme,
+              child: footer,
+            ),
+      body: NotificationListener<ScrollMetricsNotification>(
+        // Metrics catch layout changes; scroll notifications catch movement.
+        onNotification: (notification) => _handleScrollMetrics(notification.metrics),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) => _handleScrollMetrics(notification.metrics),
+          child: widget.body,
+        ),
+      ),
+    );
+  }
+}
+
+/// Full-width footer wrapper that paints the overflow fade above the footer.
+class _BaseModalOverflowFooter extends StatelessWidget {
+  const _BaseModalOverflowFooter({
+    required this.showGradient,
+    required this.theme,
+    required this.child,
+  });
+
+  final bool showGradient;
+  final BaseModalThemeData theme;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    // Passthrough preserves the footer's natural full-width layout.
+    return Stack(
+      clipBehavior: Clip.none,
+      fit: StackFit.passthrough,
+      children: [
+        child,
+        Positioned(
+          top: -theme.footerOverflowGradientHeight,
+          left: 0,
+          right: 0,
+          height: theme.footerOverflowGradientHeight,
+          child: IgnorePointer(
+            // Visual fade only; never intercept body interaction.
+            child: AnimatedOpacity(
+              opacity: showGradient ? 1 : 0,
+              duration: theme.footerOverflowGradientDuration,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      theme.footerBackgroundColor,
+                      theme.footerBackgroundColor.withValues(alpha: 0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -118,8 +354,8 @@ class BaseModalBody extends StatelessWidget {
 class BaseModalHeader extends StatelessWidget {
   /// Creates a modal header.
   const BaseModalHeader({
-    required this.title,
     super.key,
+    required this.title,
     this.subtitle,
     this.leading,
     this.showBackButton = true,
@@ -263,8 +499,8 @@ class BaseModalHeader extends StatelessWidget {
 class BaseModalFooter extends StatelessWidget {
   /// Creates a modal action footer.
   const BaseModalFooter({
-    required this.actions,
     super.key,
+    required this.actions,
     this.stackOnBottomSheet = false,
   });
 
@@ -287,6 +523,7 @@ class BaseModalFooter extends StatelessWidget {
         children: _withVerticalGaps(actions),
       );
     } else {
+      // Mobile actions share width; dialog actions keep their natural size.
       final rowActions = isBottomSheet ? actions.map((action) => Expanded(child: action)).toList() : actions;
       content = Row(
         mainAxisAlignment: MainAxisAlignment.end,

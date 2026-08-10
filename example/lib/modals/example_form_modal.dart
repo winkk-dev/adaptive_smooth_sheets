@@ -86,6 +86,7 @@ class _ExampleFormModalState extends State<ExampleFormModal> {
       return;
     }
 
+    // Capture the messenger before dismissing this modal context.
     final messenger = ScaffoldMessenger.of(context);
     AdaptiveSheetNavigator.of(context).close();
     messenger.showSnackBar(
@@ -95,12 +96,13 @@ class _ExampleFormModalState extends State<ExampleFormModal> {
 
   @override
   Widget build(BuildContext context) {
+    // One form scope keeps body fields and fixed footer actions in sync.
     return ReactiveForm(
       formGroup: _form,
       child: BaseModal(
         title: 'Project brief',
         subtitle: 'Reactive form state spans body and footer',
-        body: BaseModalBody.scrollable(
+        body: BaseModalBody.singleChild(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

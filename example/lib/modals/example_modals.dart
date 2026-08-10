@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:adaptive_smooth_sheets/adaptive_smooth_sheets.dart';
 import 'package:flutter/material.dart';
 
@@ -76,7 +74,7 @@ class _QuickViewModal extends StatelessWidget {
     return BaseModal(
       title: 'Quick view',
       subtitle: 'Short content uses its natural height',
-      body: BaseModalBody(
+      body: BaseModalBody.singleChild(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,7 +128,7 @@ class _TabsModal extends StatelessWidget {
         ],
       ),
       children: const [
-        BaseModalBody(
+        BaseModalBody.singleChild(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -184,7 +182,7 @@ class _LocallyThemedModal extends StatelessWidget {
         builder: (context) => BaseModal(
           title: 'Local theme',
           subtitle: 'One route overrides global package defaults',
-          body: BaseModalBody(
+          body: BaseModalBody.singleChild(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -232,54 +230,31 @@ class _PresentationBadge extends StatelessWidget {
   }
 }
 
-class _LazyListModal extends StatefulWidget {
+class _LazyListModal extends StatelessWidget {
   const _LazyListModal();
 
   @override
-  State<_LazyListModal> createState() => _LazyListModalState();
-}
-
-class _LazyListModalState extends State<_LazyListModal> {
-  final _scrollController = ScrollController();
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final modalTheme = BaseModalThemeData.of(context);
-    final availableHeight = MediaQuery.sizeOf(context).height * 0.62;
-    final listHeight = math.min(540.0, math.max(280.0, availableHeight));
-
     return BaseModal(
       title: 'Lazy list',
       subtitle: 'Scroll content hands drag gestures back to the sheet',
-      body: SizedBox(
-        height: listHeight,
-        child: ListView.separated(
-          key: const PageStorageKey('lazy-list'),
-          controller: _scrollController,
-          padding: modalTheme.bodyPadding,
-          itemCount: 500,
-          separatorBuilder: (context, index) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final number = index + 1;
-            return ListTile(
-              leading: CircleAvatar(child: Text('$number')),
-              title: Text('Generated record $number'),
-              subtitle: const Text('Built only when it enters the viewport'),
-            );
-          },
-        ),
+      body: BaseModalBody.list(
+        itemCount: 500,
+        separatorBuilder: (context, index) => const Divider(height: 1),
+        itemBuilder: (context, index) {
+          final number = index + 1;
+          return ListTile(
+            leading: CircleAvatar(child: Text('$number')),
+            title: Text('Generated record $number'),
+            subtitle: const Text('Built only when it enters the viewport'),
+          );
+        },
       ),
       footer: BaseModalFooter(
         actions: [
           OutlinedButton.icon(
             onPressed: () {
-              _scrollController.animateTo(
+              AdaptiveSheetScrollController.of(context).animateTo(
                 0,
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOut,
@@ -314,7 +289,7 @@ class _ResizeStateModalState extends State<_ResizeStateModal> {
     return BaseModal(
       title: 'Resize state',
       subtitle: 'Edit values, then resize across the breakpoint',
-      body: BaseModalBody(
+      body: BaseModalBody.singleChild(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -359,14 +334,23 @@ class _ActivityTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: BaseModalThemeData.of(context).bodyPadding,
-      itemCount: 500,
-      itemBuilder: (context, index) => ListTile(
-        leading: const Icon(Icons.history),
-        title: Text('Activity event ${index + 1}'),
-        subtitle: const Text('Tab content can use its own lazy scroll view'),
-      ),
+    return BaseModalBody.slivers(
+      slivers: [
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Text('Recent workspace activity'),
+          ),
+        ),
+        SliverList.builder(
+          itemCount: 500,
+          itemBuilder: (context, index) => ListTile(
+            leading: const Icon(Icons.history),
+            title: Text('Activity event ${index + 1}'),
+            subtitle: const Text('Built lazily from project-owned slivers'),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -384,22 +368,23 @@ class _SettingsTabState extends State<_SettingsTab> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: BaseModalThemeData.of(context).bodyPadding,
-      children: [
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          value: _notifications,
-          onChanged: (value) => setState(() => _notifications = value),
-          title: const Text('Notifications'),
-        ),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          value: _compactRows,
-          onChanged: (value) => setState(() => _compactRows = value),
-          title: const Text('Compact rows'),
-        ),
-      ],
+    return BaseModalBody.singleChild(
+      child: Column(
+        children: [
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _notifications,
+            onChanged: (value) => setState(() => _notifications = value),
+            title: const Text('Notifications'),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _compactRows,
+            onChanged: (value) => setState(() => _compactRows = value),
+            title: const Text('Compact rows'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -421,6 +406,7 @@ class _GuardedDismissModalState extends State<_GuardedDismissModal> {
       _allowPop = true;
       _hasUnsavedChanges = false;
     });
+    // Let the permissive PopScope rebuild before requesting dismissal.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         AdaptiveSheetNavigator.of(context).close();
@@ -473,7 +459,7 @@ class _GuardedDismissModalState extends State<_GuardedDismissModal> {
       child: BaseModal(
         title: 'Guarded close',
         subtitle: 'Smooth Sheets reports swipe dismissal attempts',
-        body: BaseModalBody(
+        body: BaseModalBody.singleChild(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

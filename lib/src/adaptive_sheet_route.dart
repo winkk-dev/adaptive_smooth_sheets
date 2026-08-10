@@ -12,6 +12,7 @@ import 'adaptive_sheet_native_back_behavior.dart';
 import 'adaptive_sheet_page.dart';
 import 'adaptive_sheet_page_transition.dart';
 import 'adaptive_sheet_presentation.dart';
+import 'adaptive_sheet_scroll_controller.dart';
 import 'adaptive_sheet_scope.dart';
 import 'adaptive_sheet_theme.dart';
 
@@ -152,6 +153,7 @@ Widget _buildAdaptiveSheetBarrier<T>(
   final route = modalRoute as _AdaptiveSheetRoute<T>;
 
   void onDismiss() {
+    // Ignore barrier taps during opening or an active sheet drag.
     if (route.animation!.isCompleted && !route.navigator!.userGestureInProgress) {
       route._closeFromBarrier?.call();
     }
@@ -451,6 +453,7 @@ class _AdaptiveSheetPageSurface extends StatefulWidget {
 }
 
 class _AdaptiveSheetPageSurfaceState extends State<_AdaptiveSheetPageSurface> {
+  // Preserves the page element while responsive layout reparents it.
   final GlobalKey _contentKey = GlobalKey(
     debugLabel: 'adaptive-sheet-page-content',
   );
@@ -462,7 +465,9 @@ class _AdaptiveSheetPageSurfaceState extends State<_AdaptiveSheetPageSurface> {
       width: double.infinity,
       child: KeyedSubtree(
         key: _contentKey,
-        child: _AdaptiveSheetDismissShortcuts(child: widget.child),
+        child: AdaptiveSheetScrollControllerProvider(
+          child: _AdaptiveSheetDismissShortcuts(child: widget.child),
+        ),
       ),
     );
 
@@ -512,6 +517,7 @@ class _AdaptiveDialogSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewPadding = theme.useSafeArea ? MediaQuery.viewPaddingOf(context) : EdgeInsets.zero;
     final keyboardBottom = theme.avoidKeyboardInset ? MediaQuery.viewInsetsOf(context).bottom : 0.0;
+    // Keep both safe areas and the keyboard outside the dialog surface.
     final margin = EdgeInsets.fromLTRB(
       math.max(theme.dialogMargin.left, viewPadding.left),
       math.max(theme.dialogMargin.top, viewPadding.top),
@@ -522,6 +528,7 @@ class _AdaptiveDialogSurface extends StatelessWidget {
       ),
     );
 
+    // Only taps outside the dialog should dismiss the route.
     final outsideSurface = theme.barrierDismissible
         ? GestureDetector(
             behavior: HitTestBehavior.opaque,

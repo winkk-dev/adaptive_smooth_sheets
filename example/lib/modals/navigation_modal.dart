@@ -32,7 +32,7 @@ class _DirectionPageState extends State<_DirectionPage> {
     return BaseModal(
       title: 'Choose direction',
       subtitle: 'Step 1 of 3',
-      body: BaseModalBody(
+      body: BaseModalBody.singleChild(
         child: Column(
           key: const ValueKey('navigation-step-1'),
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -101,7 +101,7 @@ class _BehaviorPageState extends State<_BehaviorPage> {
     return BaseModal(
       title: 'Tune behavior',
       subtitle: 'Step 2 of 3',
-      body: BaseModalBody(
+      body: BaseModalBody.singleChild(
         child: Column(
           key: const ValueKey('navigation-step-2'),
           mainAxisSize: MainAxisSize.min,
@@ -166,7 +166,7 @@ class _ReviewPage extends StatelessWidget {
     return BaseModal(
       title: 'Review',
       subtitle: 'Step 3 of 3',
-      body: BaseModalBody(
+      body: BaseModalBody.singleChild(
         child: Column(
           key: const ValueKey('navigation-step-3'),
           mainAxisSize: MainAxisSize.min,
