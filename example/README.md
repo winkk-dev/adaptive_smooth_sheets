@@ -26,4 +26,7 @@ The reusable application-side pieces are split into:
 - `lib/modals/base_modal/base_modal_theme.dart` for application-only styling.
 - `lib/theme/app_theme.dart` for Material, package, and modal theme setup.
 
+`BaseModalThemeData` customizes modal-specific chrome and typography. Tab bars
+use Flutter's standard `ThemeData.tabBarTheme`.
+
 The form composition remains deliberately modest and project-owned.

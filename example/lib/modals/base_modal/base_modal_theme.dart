@@ -17,6 +17,8 @@ class BaseModalThemeData extends ThemeExtension<BaseModalThemeData> {
     this.dragHandleSize = const Size(56, 4),
     this.dragHandlePadding = const EdgeInsets.fromLTRB(24, 12, 24, 4),
     this.headerPadding = const EdgeInsets.fromLTRB(24, 12, 16, 16),
+    this.headerTitleStyle = const TextStyle(fontWeight: FontWeight.w600),
+    this.headerSubtitleStyle = const TextStyle(),
     this.bodyPadding = const EdgeInsets.fromLTRB(24, 20, 24, 32),
     this.footerPadding = const EdgeInsets.fromLTRB(24, 16, 24, 20),
     this.footerOverflowGradientHeight = 24,
@@ -58,6 +60,12 @@ class BaseModalThemeData extends ThemeExtension<BaseModalThemeData> {
   /// Padding around header content.
   final EdgeInsets headerPadding;
 
+  /// Style merged into the ambient modal title style.
+  final TextStyle headerTitleStyle;
+
+  /// Style merged into the ambient modal subtitle style.
+  final TextStyle headerSubtitleStyle;
+
   /// The divider below the header.
   final BorderSide headerDivider;
 
@@ -87,6 +95,8 @@ class BaseModalThemeData extends ThemeExtension<BaseModalThemeData> {
     Color? headerBackgroundColor,
     Color? headerForegroundColor,
     EdgeInsets? headerPadding,
+    TextStyle? headerTitleStyle,
+    TextStyle? headerSubtitleStyle,
     BorderSide? headerDivider,
     EdgeInsets? bodyPadding,
     Color? footerBackgroundColor,
@@ -102,6 +112,8 @@ class BaseModalThemeData extends ThemeExtension<BaseModalThemeData> {
       headerBackgroundColor: headerBackgroundColor ?? this.headerBackgroundColor,
       headerForegroundColor: headerForegroundColor ?? this.headerForegroundColor,
       headerPadding: headerPadding ?? this.headerPadding,
+      headerTitleStyle: headerTitleStyle ?? this.headerTitleStyle,
+      headerSubtitleStyle: headerSubtitleStyle ?? this.headerSubtitleStyle,
       headerDivider: headerDivider ?? this.headerDivider,
       bodyPadding: bodyPadding ?? this.bodyPadding,
       footerBackgroundColor: footerBackgroundColor ?? this.footerBackgroundColor,
@@ -137,6 +149,16 @@ class BaseModalThemeData extends ThemeExtension<BaseModalThemeData> {
         t,
       )!,
       headerPadding: EdgeInsets.lerp(headerPadding, other.headerPadding, t)!,
+      headerTitleStyle: TextStyle.lerp(
+        headerTitleStyle,
+        other.headerTitleStyle,
+        t,
+      )!,
+      headerSubtitleStyle: TextStyle.lerp(
+        headerSubtitleStyle,
+        other.headerSubtitleStyle,
+        t,
+      )!,
       headerDivider: BorderSide.lerp(headerDivider, other.headerDivider, t),
       bodyPadding: EdgeInsets.lerp(bodyPadding, other.bodyPadding, t)!,
       footerBackgroundColor: Color.lerp(

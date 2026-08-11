@@ -307,19 +307,20 @@ class BaseModalHeader extends StatelessWidget {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: modalTheme.headerForegroundColor,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: (Theme.of(context).textTheme.titleLarge ?? const TextStyle())
+                            .merge(modalTheme.headerTitleStyle)
+                            .copyWith(color: modalTheme.headerForegroundColor),
                       ),
                       if (subtitle != null)
                         Text(
                           subtitle!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: modalTheme.headerForegroundColor.withValues(alpha: 0.72),
-                          ),
+                          style: (Theme.of(context).textTheme.bodySmall ?? const TextStyle())
+                              .merge(modalTheme.headerSubtitleStyle)
+                              .copyWith(
+                                color: modalTheme.headerForegroundColor.withValues(alpha: 0.72),
+                              ),
                         ),
                     ],
                   ),

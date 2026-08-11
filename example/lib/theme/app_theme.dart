@@ -29,6 +29,15 @@ class AppTheme {
         fillColor: colors.surfaceContainerHighest.withValues(alpha: 0.45),
         border: const OutlineInputBorder(),
       ),
+      /*tabBarTheme: TabBarThemeData(
+        indicatorColor: colors.primary,
+        indicatorSize: TabBarIndicatorSize.label,
+        indicatorAnimation: TabIndicatorAnimation.linear,
+        labelColor: colors.primary,
+        labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+        unselectedLabelColor: colors.onSurfaceVariant,
+        dividerColor: colors.outlineVariant,
+      ),*/
       extensions: [
         // Generic package mechanics are configured globally here.
         AdaptiveSheetThemeData(
@@ -53,6 +62,8 @@ class AppTheme {
           headerBackgroundColor: colors.surface,
           headerForegroundColor: colors.onSurface,
           headerDivider: BorderSide(color: colors.outlineVariant),
+          headerTitleStyle: const TextStyle(fontWeight: FontWeight.w700),
+          headerSubtitleStyle: const TextStyle(height: 1.3),
           footerBackgroundColor: colors.surfaceContainerLow,
           footerDivider: BorderSide(color: colors.outlineVariant),
         ),
