@@ -166,11 +166,12 @@ Widget _buildAdaptiveSheetBarrier<T>(
       dismissible: route.barrierDismissible,
       semanticsLabel: route.barrierLabel,
       barrierSemanticsDismissible: route.semanticsDismissible,
-      color: route.sheetVisibility.drive(
-        ColorTween(
-          begin: barrierColor.withValues(alpha: 0),
-          end: barrierColor,
-        ),
+      color: _AdaptiveSheetBarrierColorAnimation(
+        transitionProgress: route.animation!,
+        sheetVisibility: route.sheetVisibility,
+        isUserGestureInProgress: () => route.navigator!.userGestureInProgress,
+        curve: route.transitionCurve,
+        color: barrierColor,
       ),
     );
   }
@@ -181,6 +182,54 @@ Widget _buildAdaptiveSheetBarrier<T>(
     semanticsLabel: route.barrierLabel,
     barrierSemanticsDismissible: route.semanticsDismissible,
   );
+}
+
+/// Fades the barrier with sheet swipes without rebuilding during sheet layout.
+class _AdaptiveSheetBarrierColorAnimation extends Animation<Color> {
+  _AdaptiveSheetBarrierColorAnimation({
+    required this.transitionProgress,
+    required this.sheetVisibility,
+    required this.isUserGestureInProgress,
+    required this.curve,
+    required this.color,
+  }) : _transparentColor = color.withValues(alpha: 0);
+
+  final Animation<double> transitionProgress;
+  final Animation<double> sheetVisibility;
+  final ValueGetter<bool> isUserGestureInProgress;
+  final Curve curve;
+  final Color color;
+  final Color _transparentColor;
+
+  @override
+  void addListener(VoidCallback listener) {
+    // Sheet visibility may notify during layout; route animations are safe.
+    transitionProgress.addListener(listener);
+  }
+
+  @override
+  void removeListener(VoidCallback listener) {
+    transitionProgress.removeListener(listener);
+  }
+
+  @override
+  void addStatusListener(AnimationStatusListener listener) {
+    transitionProgress.addStatusListener(listener);
+  }
+
+  @override
+  void removeStatusListener(AnimationStatusListener listener) {
+    transitionProgress.removeStatusListener(listener);
+  }
+
+  @override
+  AnimationStatus get status => transitionProgress.status;
+
+  @override
+  Color get value {
+    final opacity = isUserGestureInProgress() ? sheetVisibility.value : curve.transform(transitionProgress.value);
+    return Color.lerp(_transparentColor, color, opacity)!;
+  }
 }
 
 class _AdaptiveSheet<T> extends StatefulWidget {

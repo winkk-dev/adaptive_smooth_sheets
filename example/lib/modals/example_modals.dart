@@ -38,6 +38,14 @@ Future<void> showTabsModal(BuildContext context) {
   );
 }
 
+/// Shows tabs whose active content controls the modal height and footer.
+Future<void> showContentSizedTabsModal(BuildContext context) {
+  return showAdaptiveSheet<void>(
+    context: context,
+    page: const AdaptiveSheetPage<void>(child: _ContentSizedTabsModal()),
+  );
+}
+
 /// Shows sheet-aware pop interception for barrier, back, and swipe attempts.
 Future<void> showGuardedDismissModal(BuildContext context) {
   return showAdaptiveSheet<void>(
@@ -110,9 +118,9 @@ class _TabsModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BaseTabModal(
+    return BaseTabModal.fill(
       title: 'Workspace',
-      subtitle: 'Flutter tabs inside an adaptive route',
+      subtitle: 'Lazy tabs fill the available body height',
       tabs: const [
         Tab(text: 'Overview'),
         Tab(text: 'Activity'),
@@ -134,14 +142,139 @@ class _TabsModal extends StatelessWidget {
               _PresentationBadge(),
               SizedBox(height: 16),
               Text(
-                'The DefaultTabController lives inside the preserved modal '
-                'content tree, so the selected tab survives live resizing.',
+                'The tab controller lives inside the preserved modal content '
+                'tree, so the selected tab survives live resizing.',
               ),
             ],
           ),
         ),
         _ActivityTab(),
         _SettingsTab(),
+      ],
+    );
+  }
+}
+
+class _ContentSizedTabsModal extends StatelessWidget {
+  const _ContentSizedTabsModal();
+
+  @override
+  Widget build(BuildContext context) {
+    return BaseTabModal(
+      title: 'Content-sized tabs',
+      subtitle: 'The active tab controls the modal height',
+      tabs: const [
+        Tab(text: 'Summary'),
+        Tab(text: 'Details'),
+        Tab(text: 'Review'),
+        Tab(text: 'Timeline'),
+      ],
+      footerBuilder: (context, tabIndex, tabController) {
+        const nextLabels = ['Show details', 'Review', 'Show timeline'];
+        return BaseModalFooter(
+          actions: [
+            if (tabIndex > 0)
+              OutlinedButton(
+                onPressed: () => tabController.animateTo(tabIndex - 1),
+                child: const Text('Previous'),
+              ),
+            if (tabIndex < 3)
+              FilledButton(
+                onPressed: () => tabController.animateTo(tabIndex + 1),
+                child: Text(nextLabels[tabIndex]),
+              )
+            else
+              FilledButton(
+                onPressed: AdaptiveSheetNavigator.of(context).close,
+                child: const Text('Finish'),
+              ),
+          ],
+        );
+      },
+      children: const [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.auto_awesome_outlined, size: 36),
+            SizedBox(height: 16),
+            Text('A compact first tab keeps the complete modal short.'),
+          ],
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('This tab needs more room, so the modal grows with it.'),
+            SizedBox(height: 12),
+            Card(
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: Icon(Icons.person_outline),
+                    title: Text('Owner'),
+                    subtitle: Text('Alex Morgan'),
+                  ),
+                  Divider(height: 1),
+                  ListTile(
+                    leading: Icon(Icons.calendar_today_outlined),
+                    title: Text('Schedule'),
+                    subtitle: Text('Every Monday at 09:00'),
+                  ),
+                  Divider(height: 1),
+                  ListTile(
+                    leading: Icon(Icons.notifications_outlined),
+                    title: Text('Notifications'),
+                    subtitle: Text('Email and in-app'),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 12),
+            Text('No screen-height calculation is involved.'),
+          ],
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.check_circle_outline, size: 36),
+            SizedBox(height: 16),
+            Text('The footer now offers Previous and Show timeline.'),
+            SizedBox(height: 12),
+            Text('Swipe between pages or use the footer actions.'),
+          ],
+        ),
+        _TimelineTab(),
+      ],
+    );
+  }
+}
+
+class _TimelineTab extends StatelessWidget {
+  const _TimelineTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'This deliberately taller fourth tab demonstrates natural modal '
+          'growth and longer-distance tab animation.',
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Column(
+            children: [
+              for (var index = 0; index < 7; index++) ...[
+                ListTile(
+                  leading: CircleAvatar(child: Text('${index + 1}')),
+                  title: Text('Timeline event ${index + 1}'),
+                  subtitle: const Text('Additional content for size testing'),
+                ),
+                if (index < 6) const Divider(height: 1),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }

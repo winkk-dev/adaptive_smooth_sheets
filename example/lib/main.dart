@@ -107,8 +107,16 @@ class ExampleHomePage extends StatelessWidget {
                   ),
                   _ExampleButton(
                     icon: Icons.tab_outlined,
-                    title: 'Tabs',
-                    description: 'Shared header, lazy tab body, sticky footer',
+                    title: 'Content-sized tabs',
+                    description: 'Natural height and tab-specific footers',
+                    onPressed: () => unawaited(
+                      showContentSizedTabsModal(context),
+                    ),
+                  ),
+                  _ExampleButton(
+                    icon: Icons.table_rows_outlined,
+                    title: 'Scrollable tabs',
+                    description: 'Full-height lazy body and shared footer',
                     onPressed: () => unawaited(showTabsModal(context)),
                   ),
                   _ExampleButton(
