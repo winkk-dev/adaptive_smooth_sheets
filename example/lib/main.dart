@@ -141,7 +141,7 @@ class ExampleHomePage extends StatelessWidget {
                     icon: Icons.fact_check_outlined,
                     title: 'Reactive form',
                     description: 'Long validation and keyboard example',
-                    onPressed: () => unawaited(showExampleFormModal(context)),
+                    onPressed: () => unawaited(ExampleFormModal().show(context)),
                   ),
                 ],
               ),
