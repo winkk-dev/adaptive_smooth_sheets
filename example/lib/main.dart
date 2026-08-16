@@ -121,8 +121,8 @@ class ExampleHomePage extends StatelessWidget {
                   ),
                   _ExampleButton(
                     icon: Icons.route_outlined,
-                    title: 'Navigation flow',
-                    description: 'Three nested routes with transitions',
+                    title: 'Navigation & state',
+                    description: 'Configure route retention, then try the flow',
                     onPressed: () => unawaited(showNavigationModal(context)),
                   ),
                   _ExampleButton(

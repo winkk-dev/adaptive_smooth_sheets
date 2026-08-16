@@ -255,10 +255,7 @@ void main() {
     _configureView(tester);
     await tester.pumpWidget(const ExampleApp());
 
-    await tester.ensureVisible(find.text('Navigation flow'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Navigation flow'));
-    await tester.pumpAndSettle();
+    await _openNavigationFlow(tester);
     expect(find.textContaining('Step 1 of 3'), findsOneWidget);
     expect(find.text('Choose a starting direction'), findsOneWidget);
     expect(find.byTooltip('Back'), findsNothing);
@@ -288,8 +285,134 @@ void main() {
     await tester.tap(find.text('Finish'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Step 3 of 3'), findsNothing);
-    expect(find.text('Navigation flow'), findsOneWidget);
+    expect(find.text('Navigation & state'), findsOneWidget);
   });
+
+  testWidgets('stacked adaptive modal keeps a disposable route mounted', (
+    tester,
+  ) async {
+    _configureView(tester);
+    tester.view.physicalSize = const Size(1200, 900);
+    await tester.pumpWidget(const ExampleApp());
+
+    await _openNavigationFlow(tester, routeMaintainState: false);
+    await tester.tap(find.text('Desktop'));
+    await tester.pumpAndSettle();
+    final instanceBefore = tester.widget<Text>(find.textContaining('State instance #')).data;
+
+    await tester.ensureVisible(find.text('Show smaller adaptive modal'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Show smaller adaptive modal'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Engineering'));
+    await tester.tap(find.text('Use selection'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<Text>(find.textContaining('State instance #')).data,
+      instanceBefore,
+    );
+    expect(
+      tester.widget<SegmentedButton<int>>(find.byType(SegmentedButton<int>)).selected,
+      {1},
+    );
+    expect(
+      find.text('Selection modal returned: Engineering'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('disposable internal page is recreated after push and pop', (
+    tester,
+  ) async {
+    _configureView(tester);
+    tester.view.physicalSize = const Size(1200, 900);
+    await tester.pumpWidget(const ExampleApp());
+
+    await _openNavigationFlow(tester, pageMaintainState: false);
+    await tester.tap(find.text('Desktop'));
+    await tester.pumpAndSettle();
+    final instanceBefore = tester.widget<Text>(find.textContaining('State instance #')).data;
+
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<Text>(find.textContaining('State instance #')).data,
+      isNot(instanceBefore),
+    );
+    expect(
+      tester.widget<SegmentedButton<int>>(find.byType(SegmentedButton<int>)).selected,
+      {0},
+    );
+  });
+
+  for (final maintainState in [true, false]) {
+    testWidgets(
+      'opaque coverage ${maintainState ? 'retains' : 'recreates'} the route '
+      'when maintainState is $maintainState',
+      (tester) async {
+        _configureView(tester);
+        tester.view.physicalSize = const Size(1200, 900);
+        await tester.pumpWidget(const ExampleApp());
+        await _openNavigationFlow(
+          tester,
+          routeMaintainState: maintainState,
+        );
+        await tester.tap(find.text('Desktop'));
+        await tester.pumpAndSettle();
+        final instanceBefore = tester.widget<Text>(find.textContaining('State instance #')).data;
+
+        await tester.ensureVisible(find.text('Cover with an opaque route'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cover with an opaque route'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Return to modal'));
+        await tester.pumpAndSettle();
+
+        final instanceAfter = tester.widget<Text>(find.textContaining('State instance #')).data;
+        final direction = tester.widget<SegmentedButton<int>>(
+          find.byType(SegmentedButton<int>),
+        );
+        if (maintainState) {
+          expect(instanceAfter, instanceBefore);
+          expect(direction.selected, {1});
+        } else {
+          expect(instanceAfter, isNot(instanceBefore));
+          expect(direction.selected, {0});
+        }
+      },
+    );
+  }
+}
+
+Future<void> _openNavigationFlow(
+  WidgetTester tester, {
+  bool routeMaintainState = true,
+  bool pageMaintainState = true,
+}) async {
+  await tester.ensureVisible(find.text('Navigation & state'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Navigation & state'));
+  await tester.pumpAndSettle();
+
+  if (!routeMaintainState) {
+    await tester.tap(
+      find.widgetWithText(SwitchListTile, 'Keep whole modal state'),
+    );
+    await tester.pumpAndSettle();
+  }
+  if (!pageMaintainState) {
+    await tester.tap(
+      find.widgetWithText(SwitchListTile, 'Keep internal page state'),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  await tester.tap(find.text('Open navigation flow'));
+  await tester.pumpAndSettle();
 }
 
 void _configureView(WidgetTester tester) {
