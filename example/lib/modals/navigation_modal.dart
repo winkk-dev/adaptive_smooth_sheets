@@ -533,30 +533,146 @@ class _ReviewPage extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'The adaptive modal stayed open while PagedSheet coordinated '
-              'three page routes and their different content sizes.',
+              'Choose whether to replace only this page or replace the '
+              'complete internal page stack. The outer adaptive modal stays '
+              'open in both cases.',
             ),
             const SizedBox(height: 24),
             const Card(
               child: ListTile(
                 leading: Icon(Icons.layers_outlined),
                 title: Text('Three-page stack'),
-                subtitle: Text('Explicit page back and complete modal close'),
+                subtitle: Text(
+                  'replace keeps earlier pages; replaceAll removes them',
+                ),
               ),
             ),
           ],
         ),
       ),
       footer: BaseModalFooter(
+        stackOnBottomSheet: true,
         actions: [
-          OutlinedButton(
-            onPressed: sheetNavigator.pop,
-            child: const Text('Back'),
+          OutlinedButton.icon(
+            onPressed: () {
+              sheetNavigator.replace<void, void>(
+                const AdaptiveSheetPage<void>(
+                  settings: RouteSettings(name: 'replacement'),
+                  child: _ReplacementPage(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.find_replace),
+            label: const Text('replace'),
           ),
           FilledButton.icon(
+            onPressed: () {
+              sheetNavigator.replaceAll<void>(
+                const AdaptiveSheetPage<void>(
+                  settings: RouteSettings(name: 'replacement-complete'),
+                  child: _ReplacementCompletePage(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.layers_clear_outlined),
+            label: const Text('replaceAll'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReplacementPage extends StatelessWidget {
+  const _ReplacementPage();
+
+  @override
+  Widget build(BuildContext context) {
+    final sheetNavigator = AdaptiveSheetNavigator.of(context);
+    return BaseModal(
+      title: 'Current page replaced',
+      subtitle: 'The earlier pages are still in the stack',
+      body: BaseModalBody.singleChild(
+        child: Column(
+          key: const ValueKey('navigation-replacement-page'),
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _StepIcon(icon: Icons.find_replace),
+            const SizedBox(height: 20),
+            Text(
+              'replace swapped the review page',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Use Back to return to step 2. The removed review page will '
+              'not reappear.',
+            ),
+          ],
+        ),
+      ),
+      footer: BaseModalFooter(
+        actions: [
+          OutlinedButton.icon(
+            onPressed: sheetNavigator.pop,
+            icon: const Icon(Icons.arrow_back),
+            label: const Text('Back to step 2'),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              sheetNavigator.replaceAll<void>(
+                const AdaptiveSheetPage<void>(
+                  settings: RouteSettings(name: 'replacement-complete'),
+                  child: _ReplacementCompletePage(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.layers_clear_outlined),
+            label: const Text('replaceAll'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReplacementCompletePage extends StatelessWidget {
+  const _ReplacementCompletePage();
+
+  @override
+  Widget build(BuildContext context) {
+    final sheetNavigator = AdaptiveSheetNavigator.of(context);
+    return BaseModal(
+      title: 'Entire stack replaced',
+      subtitle: 'This page is the new stack root',
+      body: BaseModalBody.singleChild(
+        child: Column(
+          key: const ValueKey('navigation-replacement-complete-page'),
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _StepIcon(icon: Icons.task_alt),
+            const SizedBox(height: 20),
+            Text(
+              'replaceAll removed every previous page',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'There is no internal page to return to, so BaseModal no '
+              'longer shows a Back action. Closing still dismisses the outer '
+              'adaptive modal.',
+            ),
+          ],
+        ),
+      ),
+      footer: BaseModalFooter(
+        actions: [
+          FilledButton.icon(
             onPressed: sheetNavigator.close,
-            icon: const Icon(Icons.check),
-            label: const Text('Finish'),
+            icon: const Icon(Icons.close),
+            label: const Text('Close'),
           ),
         ],
       ),

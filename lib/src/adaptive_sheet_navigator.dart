@@ -51,6 +51,30 @@ class AdaptiveSheetNavigator {
     return _navigatorKey.currentState!.push<T>(_buildPageRoute(page));
   }
 
+  /// Replaces the current internal page with [page].
+  ///
+  /// The stack depth stays unchanged. [result] completes the future returned
+  /// when the replaced page was pushed, while the returned future completes
+  /// when the replacement page is later popped.
+  Future<T?> replace<T, TO>(AdaptiveSheetPage<T> page, {TO? result}) {
+    return _navigatorKey.currentState!.pushReplacement<T, TO>(
+      _buildPageRoute(page),
+      result: result,
+    );
+  }
+
+  /// Replaces every internal page with [page].
+  ///
+  /// The replacement becomes the stack root, so [canPop] is false after the
+  /// navigation settles. The returned future completes when the replacement
+  /// page is later removed.
+  Future<T?> replaceAll<T>(AdaptiveSheetPage<T> page) {
+    return _navigatorKey.currentState!.pushAndRemoveUntil<T>(
+      _buildPageRoute(page),
+      (route) => false,
+    );
+  }
+
   /// Pops the current internal page without closing the adaptive sheet.
   ///
   /// Returns false and does nothing when the first page is current.

@@ -282,9 +282,53 @@ void main() {
     expect(find.textContaining('Step 3 of 3'), findsOneWidget);
     expect(find.text('Ready to finish'), findsOneWidget);
 
-    await tester.tap(find.text('Finish'));
+    await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Step 3 of 3'), findsNothing);
+    expect(find.text('Navigation & state'), findsOneWidget);
+  });
+
+  testWidgets('navigation replace keeps the earlier pages', (tester) async {
+    _configureView(tester);
+    await tester.pumpWidget(const ExampleApp());
+
+    await _openNavigationFlow(tester);
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('replace'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Current page replaced'), findsOneWidget);
+    expect(find.byTooltip('Back'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Step 2 of 3'), findsOneWidget);
+    expect(find.textContaining('Step 3 of 3'), findsNothing);
+  });
+
+  testWidgets('navigation replaceAll clears the earlier pages', (tester) async {
+    _configureView(tester);
+    await tester.pumpWidget(const ExampleApp());
+
+    await _openNavigationFlow(tester);
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('replaceAll'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Entire stack replaced'), findsOneWidget);
+    expect(find.byTooltip('Back'), findsNothing);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Close'));
+    await tester.pumpAndSettle();
+    expect(find.text('Entire stack replaced'), findsNothing);
     expect(find.text('Navigation & state'), findsOneWidget);
   });
 

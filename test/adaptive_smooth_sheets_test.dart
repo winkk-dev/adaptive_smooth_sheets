@@ -383,6 +383,78 @@ void main() {
     },
   );
 
+  testWidgets('navigator replaces the current page with typed results', (
+    tester,
+  ) async {
+    _configureView(tester, size: const Size(500, 900));
+    await tester.pumpWidget(const _NavigationTestApp());
+    await _openSheet(tester);
+
+    await tester.tap(find.text('Push second'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Replace second'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Replacement page'), findsOneWidget);
+    expect(find.text('canPop:true'), findsOneWidget);
+    expect(
+      find.text('secondResult:42', skipOffstage: false),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Back from replacement'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('First page'), findsOneWidget);
+    expect(find.text('Replacement page'), findsNothing);
+    expect(find.text('Second page'), findsNothing);
+    expect(find.text('secondResult:42'), findsOneWidget);
+    expect(find.text('canPop:false'), findsOneWidget);
+  });
+
+  testWidgets('replacing the first page keeps it at the stack root', (
+    tester,
+  ) async {
+    _configureView(tester, size: const Size(500, 900));
+    await tester.pumpWidget(const _NavigationTestApp());
+    await _openSheet(tester);
+
+    await tester.tap(find.text('Replace first'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Root replacement page'), findsOneWidget);
+    expect(find.text('canPop:false'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Root replacement page'), findsNothing);
+  });
+
+  testWidgets('replaceAll resets a deep internal page stack', (tester) async {
+    _configureView(tester, size: const Size(500, 900));
+    await tester.pumpWidget(const _NavigationTestApp());
+    await _openSheet(tester);
+
+    await tester.tap(find.text('Push second'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Push third'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Replace all'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Stack replacement page'), findsOneWidget);
+    expect(find.text('canPop:false'), findsOneWidget);
+    expect(find.text('First page', skipOffstage: false), findsNothing);
+    expect(find.text('Second page', skipOffstage: false), findsNothing);
+    expect(find.text('Third page', skipOffstage: false), findsNothing);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Stack replacement page'), findsNothing);
+  });
+
   testWidgets('close dismisses the complete sheet from internal depth', (
     tester,
   ) async {
@@ -979,6 +1051,20 @@ class _FirstNavigationPageState extends State<_FirstNavigationPage> {
             onPressed: () => unawaited(_pushSecond(context)),
             child: const Text('Push second'),
           ),
+          FilledButton(
+            onPressed: () {
+              unawaited(
+                navigator.replace<void, void>(
+                  const AdaptiveSheetPage<void>(
+                    child: _ReplacementNavigationPage(
+                      title: 'Root replacement page',
+                    ),
+                  ),
+                ),
+              );
+            },
+            child: const Text('Replace first'),
+          ),
         ],
       ),
     );
@@ -1026,6 +1112,21 @@ class _SecondNavigationPageState extends State<_SecondNavigationPage> {
             onPressed: () => unawaited(_pushThird(context)),
             child: const Text('Push third'),
           ),
+          FilledButton(
+            onPressed: () {
+              unawaited(
+                navigator.replace<void, int>(
+                  const AdaptiveSheetPage<void>(
+                    child: _ReplacementNavigationPage(
+                      title: 'Replacement page',
+                    ),
+                  ),
+                  result: 42,
+                ),
+              );
+            },
+            child: const Text('Replace second'),
+          ),
           OutlinedButton(
             onPressed: () => navigator.pop<int>(42),
             child: const Text('Return second result'),
@@ -1059,6 +1160,20 @@ class _ThirdNavigationPage extends StatelessWidget {
           FilledButton(
             onPressed: () => navigator.close<String>('closed'),
             child: const Text('Close with result'),
+          ),
+          FilledButton(
+            onPressed: () {
+              unawaited(
+                navigator.replaceAll<void>(
+                  const AdaptiveSheetPage<void>(
+                    child: _ReplacementNavigationPage(
+                      title: 'Stack replacement page',
+                    ),
+                  ),
+                ),
+              );
+            },
+            child: const Text('Replace all'),
           ),
         ],
       ),
@@ -1136,6 +1251,32 @@ class _PopupDropdown extends StatelessWidget {
         DropdownMenuItem(value: 'a', child: Text('$labelPrefix A')),
         DropdownMenuItem(value: 'b', child: Text('$labelPrefix B')),
       ],
+    );
+  }
+}
+
+class _ReplacementNavigationPage extends StatelessWidget {
+  const _ReplacementNavigationPage({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final navigator = AdaptiveSheetNavigator.of(context);
+    return SizedBox(
+      height: 260,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(title),
+          Text('canPop:${navigator.canPop}'),
+          if (navigator.canPop)
+            FilledButton(
+              onPressed: navigator.pop,
+              child: const Text('Back from replacement'),
+            ),
+        ],
+      ),
     );
   }
 }

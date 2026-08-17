@@ -91,7 +91,7 @@ await showAdaptiveSheet<void>(
 );
 ```
 
-Push and pop pages independently from closing the complete modal:
+Push, replace, and pop pages independently from closing the complete modal:
 
 ```dart
 final sheetNavigator = AdaptiveSheetNavigator.of(context);
@@ -100,9 +100,23 @@ await sheetNavigator.push<void>(
   const AdaptiveSheetPage<void>(child: NextModalContent()),
 );
 
-sheetNavigator.pop();  // Pops an internal page.
+await sheetNavigator.replace<void, void>(
+  const AdaptiveSheetPage<void>(child: SuccessModalContent()),
+);
+
+await sheetNavigator.replaceAll<void>(
+  const AdaptiveSheetPage<void>(child: TerminalSuccessModalContent()),
+);
+
+sheetNavigator.pop();   // Pops an internal page.
 sheetNavigator.close(); // Closes the complete modal.
 ```
+
+`replace` keeps the current stack depth. Replacing the first page therefore
+creates a terminal page with no internal page below it, while replacing a page
+deeper in the stack preserves the earlier pages. `replaceAll` removes every
+earlier internal page and makes its replacement the new stack root, which is
+useful for terminal pages after a multi-step workflow.
 
 Modal open/close and internal-page animations are configured independently.
 `openCloseTransitionDuration` and `openCloseTransitionCurve` on
