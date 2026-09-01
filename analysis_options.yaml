@@ -4,6 +4,7 @@ analyzer:
   exclude:
     # Read-only application snapshots used only while extracting the package.
     - delete3/**
+    - build/**
 
 formatter:
   page_width: 150

@@ -22,7 +22,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  smooth_sheets: ^1.1.0
+  smooth_sheets: ^1.1.2
 
 dev_dependencies:
   flutter_test:
