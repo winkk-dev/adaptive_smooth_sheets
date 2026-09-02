@@ -1,9 +1,7 @@
 name: adaptive_smooth_sheets
 description: Adaptive bottom-sheet and dialog presentation for Flutter, built on smooth_sheets with live window-size adaptation.
-version: 0.1.0-dev.1
+version: 0.1.0
 #homepage:
-
-publish_to: none
 
 repository: https://github.com/winkk-dev/adaptive_smooth_sheets
 
@@ -14,6 +12,11 @@ topics:
   - responsive
   - adaptive
 
+screenshots:
+  - description: The same modal shown as a bottom sheet on compact screens and as a dialog on wider screens.
+    path: screenshots/adaptive-presentations.png
+  - description: An open modal switches presentation during resizing without losing its widget or input state.
+    path: screenshots/adaptive-resize.gif
 
 environment:
   sdk: ^3.12.2

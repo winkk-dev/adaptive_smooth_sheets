@@ -15,6 +15,8 @@ bottom-sheet-to-dialog experience.
 An already-open modal switches presentation live when the window crosses its
 configured breakpoint, without recreating its page, form, or scroll state.
 
+![An open modal switches live between dialog and bottom-sheet presentation while preserving its state.](https://raw.githubusercontent.com/winkk-dev/adaptive_smooth_sheets/main/screenshots/adaptive-resize.gif)
+
 ## Install
 
 ```sh
@@ -257,22 +259,6 @@ Run the included [example](example/) to see the public API in focused demos:
 cd example
 flutter run
 ```
-
-## Screenshots
-
-When you create the first media asset, add it under
-`screenshots/adaptive-resize.webp` at the package root. Put the rendered image
-immediately below this section, then add this metadata to `pubspec.yaml`:
-
-```yaml
-screenshots:
-  - description: 'An open modal preserves its form state while resizing between a bottom sheet and dialog.'
-    path: screenshots/adaptive-resize.webp
-```
-
-Use this as the first screenshot so pub.dev uses it as the package thumbnail.
-Keep it below 4 MB. A second static desktop screenshot can sit alongside it as
-`screenshots/adaptive-dialog.png`.
 
 ## Web browser Back
 
