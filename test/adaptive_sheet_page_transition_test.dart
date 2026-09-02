@@ -10,7 +10,7 @@ void main() {
 
     expect(theme.bottomSheetPageTransition.duration, const Duration(milliseconds: 300));
     expect(theme.bottomSheetPageTransition.builder, isNull);
-    expect(theme.dialogPageTransition.duration, const Duration(milliseconds: 300));
+    expect(theme.dialogPageTransition.duration, const Duration(milliseconds: 400));
     expect(theme.dialogPageTransition.builder, isNotNull);
   });
 

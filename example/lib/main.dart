@@ -2,9 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import 'modals/example_form_modal.dart';
-import 'modals/example_modals.dart';
-import 'modals/navigation_modal.dart';
+import 'demos/core_demos.dart';
+import 'demos/navigation_demo.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -45,7 +44,7 @@ class _ExampleAppState extends State<ExampleApp> {
   }
 }
 
-/// Launcher for the focused adaptive modal examples.
+/// Launcher for focused, public API examples.
 class ExampleHomePage extends StatelessWidget {
   /// Creates the example launcher.
   const ExampleHomePage({super.key, required this.onToggleTheme});
@@ -81,67 +80,47 @@ class ExampleHomePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'The MaterialApp registers package route defaults and a '
-                    'separate project-level modal chrome theme. This example '
-                    'uses a 720 px dialog breakpoint and 640 px dialog width.',
+                    'Every demo uses only adaptive_smooth_sheets and ordinary '
+                    'Material widgets. This app switches at a 720 px dialog '
+                    'breakpoint and preserves open modal state while resizing.',
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 24),
                   _ExampleButton(
                     icon: Icons.flash_on_outlined,
-                    title: 'Quick view',
-                    description: 'Short content and natural sheet height',
-                    onPressed: () => unawaited(showQuickViewModal(context)),
+                    title: 'Basic adaptive modal',
+                    description: 'The smallest useful showAdaptiveSheet call',
+                    onPressed: () => unawaited(showBasicDemo(context)),
                   ),
                   _ExampleButton(
                     icon: Icons.view_list_outlined,
                     title: 'Lazy list',
-                    description: 'Scroll-to-drag gesture handoff',
-                    onPressed: () => unawaited(showLazyListModal(context)),
+                    description: 'Primary scrolling and sheet-drag handoff',
+                    onPressed: () => unawaited(showLazyListDemo(context)),
                   ),
                   _ExampleButton(
                     icon: Icons.aspect_ratio_outlined,
                     title: 'Resize state',
                     description: 'Widget and input state stay mounted',
-                    onPressed: () => unawaited(showResizeStateModal(context)),
-                  ),
-                  _ExampleButton(
-                    icon: Icons.tab_outlined,
-                    title: 'Content-sized tabs',
-                    description: 'Natural height and tab-specific footers',
-                    onPressed: () => unawaited(
-                      showContentSizedTabsModal(context),
-                    ),
-                  ),
-                  _ExampleButton(
-                    icon: Icons.table_rows_outlined,
-                    title: 'Scrollable tabs',
-                    description: 'Full-height lazy body and shared footer',
-                    onPressed: () => unawaited(showTabsModal(context)),
+                    onPressed: () => unawaited(showResizeStateDemo(context)),
                   ),
                   _ExampleButton(
                     icon: Icons.route_outlined,
-                    title: 'Navigation & state',
-                    description: 'Configure route retention, then try the flow',
-                    onPressed: () => unawaited(showNavigationModal(context)),
+                    title: 'Modal navigation',
+                    description: 'Push, pop, replace, and replaceAll pages',
+                    onPressed: () => unawaited(showNavigationDemo(context)),
                   ),
                   _ExampleButton(
                     icon: Icons.shield_outlined,
-                    title: 'Guarded close',
-                    description: 'Intercept barrier, back, and sheet swipe',
-                    onPressed: () => unawaited(showGuardedDismissModal(context)),
+                    title: 'Guarded dismissal',
+                    description: 'Block barrier, Back, Escape, and swipe dismissal',
+                    onPressed: () => unawaited(showGuardedDismissDemo(context)),
                   ),
                   _ExampleButton(
-                    icon: Icons.palette_outlined,
-                    title: 'Local theme',
-                    description: 'Per-route package and chrome overrides',
-                    onPressed: () => unawaited(showLocallyThemedModal(context)),
-                  ),
-                  _ExampleButton(
-                    icon: Icons.fact_check_outlined,
-                    title: 'Reactive form',
-                    description: 'Long validation and keyboard example',
-                    onPressed: () => unawaited(ExampleFormModal().show(context)),
+                    icon: Icons.tune_outlined,
+                    title: 'Route-specific config',
+                    description: 'Custom breakpoint and geometry for one modal',
+                    onPressed: () => unawaited(showLocalOverridesDemo(context)),
                   ),
                 ],
               ),

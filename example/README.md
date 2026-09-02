@@ -1,32 +1,28 @@
 # Adaptive Smooth Sheets example
 
-This application demonstrates a project-owned modal UI layer on top of
-`adaptive_smooth_sheets`. It never imports Smooth Sheets directly, so the
-responsive implementation stays behind the package boundary.
+This is a deliberately small Flutter app that demonstrates the package's
+public API with ordinary Material widgets. It does not copy the internal Winkk
+`BaseModal`, tab, or Reactive Forms abstractions.
 
-Run it from this directory with:
+Run it from this directory:
 
 ```sh
 flutter run
 ```
 
-The launcher includes compact content, lazy lists, live state preservation,
-content-sized and full-height tabs, shared and per-tab footers, a multi-step
-nested navigation flow, guarded dismissal, themes, and a long Reactive Forms
-modal. Resize the window across the configured 720 px breakpoint while a modal
-is open to switch between bottom-sheet and dialog presentation.
+Resize the window across the configured 720 px breakpoint while any demo is
+open. The same route changes from a bottom sheet to a dialog without losing
+local state.
 
-The reusable application-side pieces are split into:
+The launcher covers:
 
-- `lib/modals/base_modal/base_modal.dart` for the project chrome entry point.
-- `lib/modals/base_modal/base_modal_body.dart` for explicit `singleChild`,
-  `list`, `slivers`, and `custom` body strategies.
-- `lib/modals/base_modal/base_tab_modal.dart` for naturally sized tabs and a
-  `.fill` mode for lazy scrollables, with shared or per-tab footers.
-- `lib/modals/base_modal/base_modal_theme.dart` for application-only styling.
-- `lib/theme/app_theme.dart` for Material, package, and modal theme setup.
+- a minimal `showAdaptiveSheet` call;
+- `AdaptiveSheetScrollController` with a lazy list;
+- state preservation during live resizing;
+- `AdaptiveSheetNavigator` page operations;
+- `AdaptiveSheetPopScope`; and
+- a route-specific breakpoint and geometry through `AdaptiveSheetConfig`.
 
-`BaseModalThemeData` customizes modal-specific chrome and typography. Tab bars
-use Flutter's standard `ThemeData.tabBarTheme`.
-
-The form composition remains deliberately modest and project-owned.
+The reusable example-only header/footer composition is in
+`lib/demos/demo_sheet_scaffold.dart`. It intentionally stays outside the
+published package API.

@@ -1,9 +1,7 @@
 import 'package:adaptive_smooth_sheets/adaptive_smooth_sheets.dart';
 import 'package:flutter/material.dart';
 
-import '../modals/base_modal/base_modal_theme.dart';
-
-/// Material and modal themes for the example application.
+/// Material and package themes for the example application.
 class AppTheme {
   AppTheme._();
 
@@ -29,17 +27,7 @@ class AppTheme {
         fillColor: colors.surfaceContainerHighest.withValues(alpha: 0.45),
         border: const OutlineInputBorder(),
       ),
-      /*tabBarTheme: TabBarThemeData(
-        indicatorColor: colors.primary,
-        indicatorSize: TabBarIndicatorSize.label,
-        indicatorAnimation: TabIndicatorAnimation.linear,
-        labelColor: colors.primary,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600),
-        unselectedLabelColor: colors.onSurfaceVariant,
-        dividerColor: colors.outlineVariant,
-      ),*/
       extensions: [
-        // Generic package mechanics are configured globally here.
         AdaptiveSheetThemeData(
           dialogBreakpoint: 720,
           dialogWidth: 640,
@@ -55,17 +43,6 @@ class AppTheme {
           nativeBackBehavior: AdaptiveSheetNativeBackBehavior.popPageOrCloseSheet,
           bottomSheetPageTransition: const AdaptiveSheetPageTransition.platformDefault(),
           dialogPageTransition: const AdaptiveSheetPageTransition.sharedAxis(),
-        ),
-        // Application chrome stays independently customizable.
-        BaseModalThemeData(
-          dragHandleColor: colors.outlineVariant,
-          headerBackgroundColor: colors.surface,
-          headerForegroundColor: colors.onSurface,
-          headerDivider: BorderSide(color: colors.outlineVariant),
-          headerTitleStyle: const TextStyle(fontWeight: FontWeight.w700),
-          headerSubtitleStyle: const TextStyle(height: 1.3),
-          footerBackgroundColor: colors.surfaceContainerLow,
-          footerDivider: BorderSide(color: colors.outlineVariant),
         ),
       ],
     );

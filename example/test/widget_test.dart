@@ -1,462 +1,144 @@
 import 'package:example/main.dart';
-import 'package:expandable_page_view/expandable_page_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('launcher explains and opens the quick-view example', (
-    tester,
-  ) async {
+  testWidgets('launcher presents focused public API demos', (tester) async {
     _configureView(tester);
     await tester.pumpWidget(const ExampleApp());
 
-    expect(find.text('Quick view'), findsOneWidget);
-    expect(find.text('Scroll-to-drag gesture handoff'), findsOneWidget);
-    expect(find.text('Content-sized tabs'), findsOneWidget);
-    expect(find.text('Scrollable tabs'), findsOneWidget);
-    expect(find.text('Reactive form'), findsOneWidget);
-
-    await tester.tap(find.text('Quick view'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Quick view'), findsWidgets);
-    expect(find.textContaining('This content remains mounted'), findsOneWidget);
+    expect(find.text('Basic adaptive modal'), findsOneWidget);
+    expect(find.text('Lazy list'), findsOneWidget);
+    expect(find.text('Resize state'), findsOneWidget);
+    expect(find.text('Modal navigation'), findsOneWidget);
+    expect(find.text('Guarded dismissal'), findsOneWidget);
+    expect(find.text('Route-specific config'), findsOneWidget);
+    expect(find.text('Fixed app chrome'), findsNothing);
+    expect(find.text('Reactive form'), findsNothing);
+    expect(find.text('Scrollable tabs'), findsNothing);
   });
 
-  testWidgets('reactive form shares validation state with its footer', (
-    tester,
-  ) async {
+  testWidgets('basic demo opens in bottom-sheet presentation on a narrow window', (tester) async {
     _configureView(tester);
     await tester.pumpWidget(const ExampleApp());
 
-    await tester.ensureVisible(find.text('Reactive form'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Reactive form'));
+    await tester.tap(find.text('Basic adaptive modal'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Project brief'), findsOneWidget);
-    expect(find.text('Project name'), findsOneWidget);
-    expect(find.text('Project code'), findsOneWidget);
-    expect(find.text('Team size'), findsOneWidget);
-    expect(find.text('Budget (€k)'), findsOneWidget);
-    expect(find.text('After approval'), findsOneWidget);
-    expect(find.text('First-month success target'), findsOneWidget);
-    expect(find.text('Support contact'), findsOneWidget);
-    expect(find.text('Follow-up notes'), findsOneWidget);
-    expect(find.text('Save brief'), findsOneWidget);
-    expect(find.byTooltip('Back'), findsNothing);
-
-    await tester.ensureVisible(find.text('Project type'));
-    await tester.tap(find.text('Project type'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Mobile application').hitTestable(), findsOneWidget);
-    expect(find.byTooltip('Back'), findsNothing);
-
-    await tester.tap(find.text('Mobile application').hitTestable());
-    await tester.pumpAndSettle();
+    expect(find.text('Bottom sheet'), findsOneWidget);
+    expect(find.textContaining('Resize the window while this modal is open'), findsOneWidget);
+    expect(
+      tester.getCenter(find.text('Bottom sheet')).dy,
+      closeTo(tester.getCenter(find.byTooltip('Close')).dy, 0.5),
+    );
   });
 
-  testWidgets('content-sized tabs resize and select their own footers', (
-    tester,
-  ) async {
+  testWidgets('route-specific config stays a sheet past the app breakpoint', (tester) async {
     _configureView(tester);
+    tester.view.physicalSize = const Size(800, 900);
     await tester.pumpWidget(const ExampleApp());
 
-    await tester.tap(find.text('Content-sized tabs'));
+    await tester.ensureVisible(find.text('Route-specific config'));
+    await tester.tap(find.text('Route-specific config'));
     await tester.pumpAndSettle();
 
-    final pageView = find.byType(ExpandablePageView);
-    final summaryHeight = tester.getSize(pageView).height;
-    expect(find.widgetWithText(FilledButton, 'Show details'), findsOneWidget);
-    expect(find.widgetWithText(OutlinedButton, 'Previous'), findsNothing);
+    expect(find.text('Bottom sheet'), findsOneWidget);
+    expect(find.text('Dialog breakpoint'), findsOneWidget);
+    expect(find.text('900 px'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Show details'));
+    tester.view.physicalSize = const Size(1000, 900);
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('modal grows with it'), findsOneWidget);
-    expect(tester.getSize(pageView).height, greaterThan(summaryHeight));
-    expect(find.widgetWithText(OutlinedButton, 'Previous'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Review'), findsOneWidget);
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Review'));
-    await tester.pumpAndSettle();
-
-    expect(tester.widget<ExpandablePageView>(pageView).controller!.page, 2);
-    expect(find.textContaining('Previous and Show timeline'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Show timeline'), findsOneWidget);
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Show timeline'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Timeline event 7'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Finish'), findsOneWidget);
-
-    await tester.drag(pageView, const Offset(300, 0));
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('Previous and Show timeline'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Show timeline'), findsOneWidget);
+    expect(find.text('Dialog'), findsOneWidget);
   });
 
-  testWidgets('content-sized tabs keep constant per-tab speed and monotonic motion', (
-    tester,
-  ) async {
+  testWidgets('resize demo preserves widget and text-field state', (tester) async {
     _configureView(tester);
     await tester.pumpWidget(const ExampleApp());
 
-    await tester.tap(find.text('Content-sized tabs'));
+    await tester.tap(find.text('Resize state'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const ValueKey('resize-state-field')), 'Kept across resize');
+    await tester.tap(find.text('Increment'));
     await tester.pumpAndSettle();
 
-    final tabBar = tester.widget<TabBar>(find.byType(TabBar));
-    final tabController = tabBar.controller!;
-    await tester.tap(find.widgetWithText(Tab, 'Details'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(tabController.index, 1);
-    expect(tabController.indexIsChanging, isFalse);
-    await tester.tap(find.widgetWithText(Tab, 'Summary'));
+    tester.view.physicalSize = const Size(1000, 900);
     await tester.pumpAndSettle();
 
-    final pageView = find.byType(ExpandablePageView);
-    final pageController = tester.widget<ExpandablePageView>(pageView).controller!;
-    final summaryHeight = tester.getSize(pageView).height;
-    final indicatorPositions = <double>[tabController.animation!.value];
-    final tabTargets = <int>[];
-    final contentPages = <double>[];
-
-    await tester.tap(find.widgetWithText(Tab, 'Timeline'));
-    await tester.pump();
-    expect(pageController.page, 0);
-    for (var i = 0; i < 30; i++) {
-      await tester.pump(const Duration(milliseconds: 20));
-      indicatorPositions.add(tabController.animation!.value);
-      tabTargets.add(tabController.index);
-      contentPages.add(pageController.page!);
-    }
-
-    for (var i = 1; i < indicatorPositions.length; i++) {
-      expect(
-        indicatorPositions[i],
-        greaterThanOrEqualTo(indicatorPositions[i - 1]),
-        reason: 'The indicator must not reverse on its way from tab 1 to tab 4.',
-      );
-    }
-    expect(tabTargets, everyElement(3));
-    expect(tabController.indexIsChanging, isTrue);
-    expect(contentPages, everyElement(anyOf(0, 3)));
-    expect(pageController.page, 3);
-    expect(tester.getSize(pageView).height, greaterThan(summaryHeight));
-    await tester.pumpAndSettle();
-    expect(tabController.index, 3);
-    expect(tabController.animation!.value, 3);
-
-    indicatorPositions
-      ..clear()
-      ..add(tabController.animation!.value);
-    tabTargets.clear();
-    contentPages.clear();
-    await tester.tap(find.widgetWithText(Tab, 'Summary'));
-    await tester.pump();
-    expect(pageController.page, 3);
-    for (var i = 0; i < 30; i++) {
-      await tester.pump(const Duration(milliseconds: 20));
-      indicatorPositions.add(tabController.animation!.value);
-      tabTargets.add(tabController.index);
-      contentPages.add(pageController.page!);
-    }
-
-    for (var i = 1; i < indicatorPositions.length; i++) {
-      expect(
-        indicatorPositions[i],
-        lessThanOrEqualTo(indicatorPositions[i - 1]),
-        reason: 'The indicator must not reverse on its way from tab 4 to tab 1.',
-      );
-    }
-    expect(tabTargets, everyElement(0));
-    expect(contentPages, everyElement(anyOf(0, 3)));
-    expect(pageController.page, 0);
-    await tester.pumpAndSettle();
-    expect(tabController.index, 0);
-    expect(tabController.animation!.value, 0);
-    expect(tester.getSize(pageView).height, summaryHeight);
+    expect(find.text('Dialog'), findsOneWidget);
+    expect(find.text('Count: 1'), findsOneWidget);
+    expect(find.text('Kept across resize'), findsOneWidget);
   });
 
-  testWidgets('scrollable tabs use the same duration per crossed tab', (
-    tester,
-  ) async {
+  testWidgets('navigation pushes and pops without losing the first page state', (tester) async {
     _configureView(tester);
     await tester.pumpWidget(const ExampleApp());
 
-    await tester.tap(find.text('Scrollable tabs'));
+    await tester.ensureVisible(find.text('Modal navigation'));
+    await tester.tap(find.text('Modal navigation'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Increment state'));
+    await tester.tap(find.text('Push next page'));
     await tester.pumpAndSettle();
 
-    final tabController = tester.widget<TabBar>(find.byType(TabBar)).controller!;
-    await tester.tap(find.widgetWithText(Tab, 'Settings'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-
-    expect(tabController.index, 2);
-    expect(tabController.indexIsChanging, isTrue);
+    expect(find.text('Second page'), findsOneWidget);
+    await tester.tap(find.text('Pop page'));
     await tester.pumpAndSettle();
-    expect(tabController.animation!.value, 2);
+
+    expect(find.text('State value: 1'), findsOneWidget);
   });
 
-  testWidgets('selected tab survives an adaptive presentation change', (
-    tester,
-  ) async {
+  testWidgets('navigation replaceAll creates a new stack root', (tester) async {
     _configureView(tester);
     await tester.pumpWidget(const ExampleApp());
 
-    await tester.tap(find.text('Scrollable tabs'));
+    await tester.ensureVisible(find.text('Modal navigation'));
+    await tester.tap(find.text('Modal navigation'));
     await tester.pumpAndSettle();
-    expect(find.byType(PageView), findsOneWidget);
-    expect(find.byType(ExpandablePageView), findsNothing);
-    expect(find.widgetWithText(FilledButton, 'Close'), findsOneWidget);
-
-    await tester.tap(find.text('Activity'));
+    await tester.tap(find.text('Push next page'));
     await tester.pumpAndSettle();
-    expect(find.text('Activity event 1'), findsOneWidget);
-    expect(find.text('Activity event 500'), findsNothing);
-    expect(find.widgetWithText(FilledButton, 'Close'), findsOneWidget);
-
-    await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
-    expect(find.text('Notifications'), findsOneWidget);
-
-    tester.view.physicalSize = const Size(1200, 900);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Notifications'), findsOneWidget);
-  });
-
-  testWidgets('guarded close reports blocked dismissal attempts', (
-    tester,
-  ) async {
-    _configureView(tester);
-    await tester.pumpWidget(const ExampleApp());
-
-    await tester.ensureVisible(find.text('Guarded close'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Guarded close'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Close'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Discard changes?'), findsOneWidget);
-    await tester.tap(find.text('Keep editing'));
-    await tester.pumpAndSettle();
-    expect(find.text('Guarded close'), findsWidgets);
-  });
-
-  testWidgets('navigation modal transitions forward and back between steps', (
-    tester,
-  ) async {
-    _configureView(tester);
-    await tester.pumpWidget(const ExampleApp());
-
-    await _openNavigationFlow(tester);
-    expect(find.textContaining('Step 1 of 3'), findsOneWidget);
-    expect(find.text('Choose a starting direction'), findsOneWidget);
-    expect(find.byTooltip('Back'), findsNothing);
-
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Step 2 of 3'), findsOneWidget);
-    expect(find.text('Tune the interaction'), findsOneWidget);
-    expect(find.byTooltip('Back'), findsOneWidget);
-
-    tester.view.physicalSize = const Size(1200, 900);
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Step 2 of 3'), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Back'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Step 1 of 3'), findsOneWidget);
-    expect(find.text('Choose a starting direction'), findsOneWidget);
-
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Step 3 of 3'), findsOneWidget);
-    expect(find.text('Ready to finish'), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Close'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Step 3 of 3'), findsNothing);
-    expect(find.text('Navigation & state'), findsOneWidget);
-  });
-
-  testWidgets('navigation replace keeps the earlier pages', (tester) async {
-    _configureView(tester);
-    await tester.pumpWidget(const ExampleApp());
-
-    await _openNavigationFlow(tester);
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('replace'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Current page replaced'), findsOneWidget);
-    expect(find.byTooltip('Back'), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Back'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Step 2 of 3'), findsOneWidget);
-    expect(find.textContaining('Step 3 of 3'), findsNothing);
-  });
-
-  testWidgets('navigation replaceAll clears the earlier pages', (tester) async {
-    _configureView(tester);
-    await tester.pumpWidget(const ExampleApp());
-
-    await _openNavigationFlow(tester);
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-
     await tester.tap(find.text('replaceAll'));
     await tester.pumpAndSettle();
 
     expect(find.text('Entire stack replaced'), findsOneWidget);
     expect(find.byTooltip('Back'), findsNothing);
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Close'));
-    await tester.pumpAndSettle();
-    expect(find.text('Entire stack replaced'), findsNothing);
-    expect(find.text('Navigation & state'), findsOneWidget);
   });
 
-  testWidgets('stacked adaptive modal keeps a disposable route mounted', (
-    tester,
-  ) async {
+  testWidgets('dismissal guard blocks then allows a close request', (tester) async {
     _configureView(tester);
-    tester.view.physicalSize = const Size(1200, 900);
     await tester.pumpWidget(const ExampleApp());
 
-    await _openNavigationFlow(tester, routeMaintainState: false);
-    await tester.tap(find.text('Desktop'));
+    await tester.ensureVisible(find.text('Guarded dismissal'));
     await tester.pumpAndSettle();
-    final instanceBefore = tester.widget<Text>(find.textContaining('State instance #')).data;
+    await tester.tap(find.text('Guarded dismissal'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Try to close'));
+    await tester.pump();
 
-    await tester.ensureVisible(find.text('Show smaller adaptive modal'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Show smaller adaptive modal'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Engineering'));
-    await tester.tap(find.text('Use selection'));
+    expect(find.text('Close blocked while changes are unsaved.'), findsOneWidget);
+    final saveButton = find.text('Mark as saved');
+    await tester.ensureVisible(saveButton);
+    await tester.tap(saveButton);
+    await tester.pump();
+    final closeButton = find.text('Close modal');
+    await tester.ensureVisible(closeButton);
+    await tester.tap(closeButton);
     await tester.pumpAndSettle();
 
-    expect(
-      tester.widget<Text>(find.textContaining('State instance #')).data,
-      instanceBefore,
-    );
-    expect(
-      tester.widget<SegmentedButton<int>>(find.byType(SegmentedButton<int>)).selected,
-      {1},
-    );
-    expect(
-      find.text('Selection modal returned: Engineering'),
-      findsOneWidget,
-    );
+    expect(find.text('Guarded dismissal'), findsOneWidget);
   });
 
-  testWidgets('disposable internal page is recreated after push and pop', (
-    tester,
-  ) async {
+  testWidgets('lazy list exposes programmatic primary scrolling', (tester) async {
     _configureView(tester);
-    tester.view.physicalSize = const Size(1200, 900);
     await tester.pumpWidget(const ExampleApp());
 
-    await _openNavigationFlow(tester, pageMaintainState: false);
-    await tester.tap(find.text('Desktop'));
+    await tester.tap(find.text('Lazy list'));
     await tester.pumpAndSettle();
-    final instanceBefore = tester.widget<Text>(find.textContaining('State instance #')).data;
-
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Back'));
+    await tester.tap(find.text('Scroll to item 60'));
     await tester.pumpAndSettle();
 
-    expect(
-      tester.widget<Text>(find.textContaining('State instance #')).data,
-      isNot(instanceBefore),
-    );
-    expect(
-      tester.widget<SegmentedButton<int>>(find.byType(SegmentedButton<int>)).selected,
-      {0},
-    );
+    expect(find.text('List item 60'), findsOneWidget);
   });
-
-  for (final maintainState in [true, false]) {
-    testWidgets(
-      'opaque coverage ${maintainState ? 'retains' : 'recreates'} the route '
-      'when maintainState is $maintainState',
-      (tester) async {
-        _configureView(tester);
-        tester.view.physicalSize = const Size(1200, 900);
-        await tester.pumpWidget(const ExampleApp());
-        await _openNavigationFlow(
-          tester,
-          routeMaintainState: maintainState,
-        );
-        await tester.tap(find.text('Desktop'));
-        await tester.pumpAndSettle();
-        final instanceBefore = tester.widget<Text>(find.textContaining('State instance #')).data;
-
-        await tester.ensureVisible(find.text('Cover with an opaque route'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Cover with an opaque route'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Return to modal'));
-        await tester.pumpAndSettle();
-
-        final instanceAfter = tester.widget<Text>(find.textContaining('State instance #')).data;
-        final direction = tester.widget<SegmentedButton<int>>(
-          find.byType(SegmentedButton<int>),
-        );
-        if (maintainState) {
-          expect(instanceAfter, instanceBefore);
-          expect(direction.selected, {1});
-        } else {
-          expect(instanceAfter, isNot(instanceBefore));
-          expect(direction.selected, {0});
-        }
-      },
-    );
-  }
-}
-
-Future<void> _openNavigationFlow(
-  WidgetTester tester, {
-  bool routeMaintainState = true,
-  bool pageMaintainState = true,
-}) async {
-  await tester.ensureVisible(find.text('Navigation & state'));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('Navigation & state'));
-  await tester.pumpAndSettle();
-
-  if (!routeMaintainState) {
-    await tester.tap(
-      find.widgetWithText(SwitchListTile, 'Keep whole modal state'),
-    );
-    await tester.pumpAndSettle();
-  }
-  if (!pageMaintainState) {
-    await tester.tap(
-      find.widgetWithText(SwitchListTile, 'Keep internal page state'),
-    );
-    await tester.pumpAndSettle();
-  }
-
-  await tester.tap(find.text('Open navigation flow'));
-  await tester.pumpAndSettle();
 }
 
 void _configureView(WidgetTester tester) {

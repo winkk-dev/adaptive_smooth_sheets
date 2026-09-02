@@ -1,201 +1,274 @@
 # Adaptive Smooth Sheets
 
-A small Flutter layer on top of `smooth_sheets` that presents modal content as
-a bottom sheet on narrow windows and a centered dialog on wide windows.
-Already-open routes adapt when the window is resized while preserving the
-content element and its widget, form, and scroll state.
+Adaptive Smooth Sheets presents the same Flutter modal as a draggable bottom
+sheet on narrow windows and a centered dialog on wide windows. An already-open
+modal switches presentation live when the window crosses its breakpoint,
+without recreating its page, form, or scroll state.
 
-## Features
+It builds on [`smooth_sheets`](https://pub.dev/packages/smooth_sheets) while
+keeping its route and sheet implementation details out of application code.
 
-- Live bottom-sheet/dialog switching with a configurable breakpoint or custom
-  resolver.
-- Global Flutter `ThemeExtension` defaults and focused per-route overrides.
-- Configurable dialog geometry, surface styling, barriers, drag physics,
-  swipe-to-dismiss, transitions, safe areas, and keyboard avoidance.
-- Bottom-sheet dragging and swipe-to-dismiss work with mouse input on desktop
-  as well as touch-like input, with independent mouse-drag control.
-- `AdaptiveSheetScope` for presentation-aware application chrome.
-- `AdaptiveSheetScaffold` for fixed top and bottom bars without importing
-  `smooth_sheets` in application code.
-- An automatic primary `AdaptiveSheetScrollController` that remains compatible
-  while an open modal switches between dialog and bottom sheet.
-- `AdaptiveSheetPage` and `AdaptiveSheetNavigator` for nested modal navigation
-  backed by Smooth Sheets' paged-sheet behavior.
-- `AdaptiveSheetPopScope` for sheet-aware dismissal guards without leaking the
-  underlying route implementation.
+## Install
 
-## Getting started
+```sh
+flutter pub add adaptive_smooth_sheets
+```
 
-Add the package from its Git repository, then import the single public
-entrypoint:
+Then import the package's single public entry point:
 
 ```dart
 import 'package:adaptive_smooth_sheets/adaptive_smooth_sheets.dart';
 ```
 
-An `AdaptiveSheetThemeData` extension is optional. Package defaults are used
-when no extension is registered.
+## First adaptive modal
 
-Mouse dragging is enabled for bottom sheets by default. Disable it globally
-with `AdaptiveSheetThemeData(enableMouseDrag: false)`, or for one route with
-`AdaptiveSheetConfig(enableMouseDrag: false)`. Touch-like dragging remains
-controlled independently by `enableDrag`.
-
-Bottom sheets use `ClampingSheetPhysics` by default, so they cannot be dragged
-beyond their bounds. Opt into elastic overdrag globally or for one route:
+Register optional application-wide defaults in `ThemeData.extensions`, then
+open a modal with `showAdaptiveSheet`.
 
 ```dart
-const sheetTheme = AdaptiveSheetThemeData(
-  bottomSheetPhysics: BouncingSheetPhysics(),
-);
+import 'package:adaptive_smooth_sheets/adaptive_smooth_sheets.dart';
+import 'package:flutter/material.dart';
 
-const sheetConfig = AdaptiveSheetConfig(
-  bottomSheetPhysics: BouncingSheetPhysics(),
-);
-```
+class ExampleApp extends StatelessWidget {
+  const ExampleApp({super.key});
 
-## Usage
-
-Register global route and surface defaults with the application theme:
-
-```dart
-MaterialApp(
-  theme: ThemeData(
-    extensions: const [
-      AdaptiveSheetThemeData(
-        dialogBreakpoint: 700,
-        dialogWidth: 640,
-        nativeBackBehavior:
-            AdaptiveSheetNativeBackBehavior.popPageOrCloseSheet,
-        bottomSheetPageTransition:
-            AdaptiveSheetPageTransition.platformDefault(),
-        dialogPageTransition: AdaptiveSheetPageTransition.sharedAxis(),
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      theme: ThemeData(
+        colorSchemeSeed: Colors.indigo,
+        extensions: const [
+          AdaptiveSheetThemeData(
+            dialogBreakpoint: 720,
+            dialogWidth: 640,
+          ),
+        ],
       ),
-    ],
-  ),
-  home: const HomePage(),
-);
+      home: Scaffold(
+        body: Center(
+          child: FilledButton(
+            onPressed: () => showAdaptiveSheet<void>(
+              context: context,
+              page: const AdaptiveSheetPage<void>(
+                child: _AccountSheet(),
+              ),
+            ),
+            child: const Text('Edit account'),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountSheet extends StatelessWidget {
+  const _AccountSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final presentation = AdaptiveSheetScope.of(context).presentation;
+
+    return AdaptiveSheetScaffold(
+      topBar: const Padding(
+        padding: EdgeInsets.fromLTRB(24, 20, 24, 12),
+        child: Text('Edit account'),
+      ),
+      body: SingleChildScrollView(
+        primary: true,
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              presentation == AdaptiveSheetPresentation.bottomSheet
+                  ? 'Bottom-sheet presentation'
+                  : 'Dialog presentation',
+            ),
+            const SizedBox(height: 16),
+            const TextField(
+              decoration: InputDecoration(labelText: 'Display name'),
+            ),
+          ],
+        ),
+      ),
+      bottomBar: Padding(
+        padding: const EdgeInsets.all(16),
+        child: FilledButton(
+          onPressed: () => AdaptiveSheetNavigator.of(context).close(),
+          child: const Text('Save'),
+        ),
+      ),
+    );
+  }
+}
 ```
 
-Show one initial page with optional outer-route overrides:
+Resize the app window while the modal is open. The presentation label changes,
+but the `TextField` and the modal page remain mounted.
+
+## What the package owns
+
+- Responsive bottom-sheet and dialog presentation, including live resizing.
+- Route geometry, barriers, safe areas, keyboard avoidance, dragging, and
+  mouse-drag support.
+- A primary `AdaptiveSheetScrollController` that bridges scrolling and sheet
+  dragging in bottom-sheet presentation.
+- An internal, typed page stack through `AdaptiveSheetPage` and
+  `AdaptiveSheetNavigator`.
+- Presentation-aware configuration through `AdaptiveSheetScope`, global
+  `AdaptiveSheetThemeData`, and per-route `AdaptiveSheetConfig`.
+
+Headers, footers, buttons, forms, tabs, and application-specific styling are
+deliberately consumer concerns. Compose them with `AdaptiveSheetScaffold` or
+with your own widgets.
+
+## Configuration
+
+Use `AdaptiveSheetThemeData` for application defaults. A route can override
+only the values it needs with `AdaptiveSheetConfig`.
 
 ```dart
 await showAdaptiveSheet<void>(
   context: context,
   config: const AdaptiveSheetConfig(
+    dialogWidth: 560,
     dialogMaxHeight: 720,
+    enableMouseDrag: false,
+    bottomSheetPhysics: BouncingSheetPhysics(),
   ),
-  page: const AdaptiveSheetPage<void>(
-    child: MyModalContent(),
+  page: AdaptiveSheetPage<void>(child: SettingsSheet()),
+);
+```
+
+The default bottom-sheet physics are `ClampingSheetPhysics`, so a sheet cannot
+be dragged beyond its bounds. Use `BouncingSheetPhysics` when elastic overdrag
+fits the application.
+
+`AdaptiveSheetPresentationPolicy` can override the breakpoint for one route or
+use a custom resolver when width alone is not enough. For example, this policy
+uses a dialog only for sufficiently wide landscape windows:
+
+```dart
+final config = AdaptiveSheetConfig(
+  presentationPolicy: AdaptiveSheetPresentationPolicy(
+    resolver: (context) {
+      final mediaQuery = MediaQuery.of(context);
+      final useDialog = mediaQuery.orientation == Orientation.landscape &&
+          mediaQuery.size.width > 840;
+
+      return useDialog
+          ? AdaptiveSheetPresentation.dialog
+          : AdaptiveSheetPresentation.bottomSheet;
+    },
   ),
 );
 ```
 
-Push, replace, and pop pages independently from closing the complete modal:
+A resolver takes precedence over `dialogBreakpoint`. Reading `MediaQuery` from
+its context also makes an already-open route react to subsequent window-size or
+orientation changes.
+
+## Navigation inside a modal
+
+`AdaptiveSheetNavigator` keeps page navigation separate from closing the outer
+modal:
 
 ```dart
 final sheetNavigator = AdaptiveSheetNavigator.of(context);
 
 await sheetNavigator.push<void>(
-  const AdaptiveSheetPage<void>(child: NextModalContent()),
+  const AdaptiveSheetPage<void>(child: DetailsSheet()),
 );
 
-await sheetNavigator.replace<void, void>(
-  const AdaptiveSheetPage<void>(child: SuccessModalContent()),
-);
-
-await sheetNavigator.replaceAll<void>(
-  const AdaptiveSheetPage<void>(child: TerminalSuccessModalContent()),
-);
-
-sheetNavigator.pop();   // Pops an internal page.
-sheetNavigator.close(); // Closes the complete modal.
+sheetNavigator.pop(); // Pops one internal page when possible.
+sheetNavigator.close(); // Closes the complete adaptive modal.
 ```
 
-`replace` keeps the current stack depth. Replacing the first page therefore
-creates a terminal page with no internal page below it, while replacing a page
-deeper in the stack preserves the earlier pages. `replaceAll` removes every
-earlier internal page and makes its replacement the new stack root, which is
-useful for terminal pages after a multi-step workflow.
+Use `replace` to replace the current page while retaining earlier pages, or
+`replaceAll` for a terminal page such as a completed multi-step flow. Page,
+route, and theme transitions are independently configurable with
+`AdaptiveSheetPageTransition`.
 
-Modal open/close and internal-page animations are configured independently.
-`openCloseTransitionDuration` and `openCloseTransitionCurve` on
-`AdaptiveSheetThemeData` or `AdaptiveSheetConfig` affect only opening and
-closing the complete modal.
+On native platforms, Back pops an internal page first and closes the modal from
+its first page by default. Override that policy with
+`AdaptiveSheetNativeBackBehavior` when needed.
 
-Internal page transitions resolve separately for the current bottom-sheet or
-dialog presentation. The default is Smooth Sheets' platform transition on a
-bottom sheet and a subtle, directional shared-axis transition in a dialog.
-Override a whole stack with `AdaptiveSheetConfig`:
+## Scrolling and dismissal guards
+
+Every `AdaptiveSheetPage` supplies an `AdaptiveSheetScrollController` as its
+primary vertical controller. Ordinary primary `ListView` and
+`SingleChildScrollView` widgets inherit it automatically. Retrieve it only when
+an action needs programmatic scrolling:
 
 ```dart
-const AdaptiveSheetConfig(
-  dialogPageTransition: AdaptiveSheetPageTransition.none(),
+await AdaptiveSheetScrollController.of(context).animateTo(
+  600,
+  duration: const Duration(milliseconds: 250),
+  curve: Curves.easeOut,
+);
+```
+
+Use `AdaptiveSheetPopScope` to guard outer-modal dismissal, including a barrier
+tap, Escape, and a swipe-to-dismiss gesture:
+
+```dart
+AdaptiveSheetPopScope<void>(
+  canPop: formIsSaved,
+  onPopInvokedWithResult: (didPop, result) {
+    if (!didPop) {
+      showDiscardChangesMessage();
+    }
+  },
+  child: const EditProfileSheet(),
 )
 ```
 
-Or override one pushed route with `AdaptiveSheetPage`:
+## Example app
 
-```dart
-AdaptiveSheetNavigator.of(context).push<void>(
-  AdaptiveSheetPage<void>(
-    dialogPageTransition: AdaptiveSheetPageTransition.custom(
-      duration: const Duration(milliseconds: 180),
-      builder: myTransition,
-    ),
-    child: const NextModalContent(),
-  ),
-);
+Run the included [example](example/) to see the public API in focused demos:
+
+- a minimal adaptive modal;
+- primary scrolling and sheet-drag handoff;
+- live resize while local widget state is preserved;
+- internal page navigation, `replace`, and `replaceAll`;
+- guarded dismissal; and
+- a route-specific breakpoint and geometry overrides.
+
+```sh
+cd example
+flutter run
 ```
 
-Page overrides take precedence over stack configuration, which takes
-precedence over the application theme. A page override controls that route's
-entrance and reverse-pop animation. Prefer a stack-level override when all
-pages need one coordinated custom transition.
+## Screenshots
 
-On native platforms, device Back pops an internal page and closes the modal
-only from its first page by default. Escape, barrier taps, swipe dismissal, and
-`AdaptiveSheetNavigator.close()` close the complete modal. Set
-`nativeBackBehavior` on `AdaptiveSheetThemeData` for an application-wide
-native policy, or override one modal with `AdaptiveSheetConfig`:
+When you create the first media asset, add it under
+`screenshots/adaptive-resize.webp` at the package root. Put the rendered image
+immediately below this section, then add this metadata to `pubspec.yaml`:
 
-```dart
-const AdaptiveSheetConfig(
-  nativeBackBehavior: AdaptiveSheetNativeBackBehavior.closeSheet,
-)
+```yaml
+screenshots:
+  - description: 'An open modal preserves its form state while resizing between a bottom sheet and dialog.'
+    path: screenshots/adaptive-resize.webp
 ```
 
-`nativeBackBehavior` has no effect on web builds.
+Use this as the first screenshot so pub.dev uses it as the package thumbnail.
+Keep it below 4 MB. A second static desktop screenshot can sit alongside it as
+`screenshots/adaptive-dialog.png`.
 
-### Web browser Back limitation
+## Web browser Back
 
-Adaptive sheet pages use a nested Flutter `Navigator`; they are not separate
-browser-history entries. A `MaterialApp` using Flutter's imperative Navigator
-normally relies on Flutter web's single-entry history strategy. Modern Chrome
-and Firefox may skip synthetic history entries because of browser
-history-manipulation protections. Consequently, toolbar, mouse, and browser
-gesture Back actions cannot reliably unwind sheet pages or even reach Flutter.
-See the
-[Chromium intervention](https://chromium.googlesource.com/chromium/src/+/main/docs/history_manipulation_intervention.md)
-and [Mozilla tracking bug](https://bugzilla.mozilla.org/show_bug.cgi?id=1939691).
+Adaptive-sheet pages use a nested Flutter `Navigator`; they are not browser
+history entries. Browser Back cannot reliably unwind those pages in an
+imperative Flutter web app. Provide visible Back and Close controls inside the
+modal, or model browser-history-aware steps in the root Router.
 
-The package deliberately does not intercept or rewrite application browser
-history. On web, visible sheet Back and Close controls are the supported modal
-navigation. Applications requiring browser-history-aware modal steps must
-model those steps in their root Router or provide a separate opt-in history
-integration.
+## Requirements
 
-Headers, footers, drag handles, buttons, content padding, forms, and other
-application-specific modal chrome intentionally remain consumer concerns.
+- Dart `^3.12.2`
+- Flutter `>=3.35.1`
 
-Every `AdaptiveSheetPage` automatically provides an
-`AdaptiveSheetScrollController` as its primary vertical scroll controller. It
-supplies normal scrolling in dialogs and Smooth Sheets' scroll-to-drag handoff
-in bottom sheets, including desktop windows resized below the dialog
-breakpoint. Use `AdaptiveSheetScrollController.of(context)` from page content
-when an action needs to scroll the modal programmatically. No wrapper is
-required in consumer modal scaffolds.
+## API reference
 
-The [`example`](example/) application shows one way to build that consumer
-layer, including project-level modal chrome, tabs, lazy content, guarded
-dismissal, global and local theming, and a Reactive Forms modal.
+pub.dev generates API documentation from the public Dart documentation. Run
+`dart doc` locally before publishing to preview it.
