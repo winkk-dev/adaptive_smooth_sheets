@@ -1,12 +1,19 @@
 # Adaptive Smooth Sheets
 
-Adaptive Smooth Sheets presents the same Flutter modal as a draggable bottom
-sheet on narrow windows and a centered dialog on wide windows. An already-open
-modal switches presentation live when the window crosses its breakpoint,
-without recreating its page, form, or scroll state.
+Adaptive Smooth Sheets extends
+[`smooth_sheets`](https://pub.dev/packages/smooth_sheets) with the responsive
+presentation behavior familiar from
+[`wolt_modal_sheet`](https://pub.dev/packages/wolt_modal_sheet). The same modal
+appears as a draggable bottom sheet on compact screens and as a centered dialog
+on larger screens.
 
-It builds on [`smooth_sheets`](https://pub.dev/packages/smooth_sheets) while
-keeping its route and sheet implementation details out of application code.
+`smooth_sheets` provides the underlying sheet, scrolling, and navigation
+behavior. This package adds the screen-size adaptation that `smooth_sheets`
+does not provide on its own—combining its flexible foundation with a responsive
+bottom-sheet-to-dialog experience.
+
+An already-open modal switches presentation live when the window crosses its
+configured breakpoint, without recreating its page, form, or scroll state.
 
 ## Install
 
@@ -182,17 +189,28 @@ await sheetNavigator.push<void>(
 );
 
 sheetNavigator.pop(); // Pops one internal page when possible.
+
+// Replaces the current page while retaining earlier pages.
+await sheetNavigator.replace<void, void>(
+  const AdaptiveSheetPage<void>(child: ReviewSheet()),
+);
+
+// Replaces the complete stack and creates a new root page.
+await sheetNavigator.replaceAll<void>(
+  const AdaptiveSheetPage<void>(child: SuccessSheet()),
+);
+
 sheetNavigator.close(); // Closes the complete adaptive modal.
 ```
 
-Use `replace` to replace the current page while retaining earlier pages, or
-`replaceAll` for a terminal page such as a completed multi-step flow. Page,
-route, and theme transitions are independently configurable with
+Page, route, and theme transitions are independently configurable with
 `AdaptiveSheetPageTransition`.
 
-On native platforms, Back pops an internal page first and closes the modal from
-its first page by default. Override that policy with
-`AdaptiveSheetNativeBackBehavior` when needed.
+On native platforms, the system Back action—such as Android's hardware or
+software Back button, or the equivalent platform back gesture—pops the current
+internal page first. When the first page is already visible, it closes the modal
+by default. Override that policy with `AdaptiveSheetNativeBackBehavior` when
+needed.
 
 ## Scrolling and dismissal guards
 
@@ -262,13 +280,3 @@ Adaptive-sheet pages use a nested Flutter `Navigator`; they are not browser
 history entries. Browser Back cannot reliably unwind those pages in an
 imperative Flutter web app. Provide visible Back and Close controls inside the
 modal, or model browser-history-aware steps in the root Router.
-
-## Requirements
-
-- Dart `^3.12.2`
-- Flutter `>=3.35.1`
-
-## API reference
-
-pub.dev generates API documentation from the public Dart documentation. Run
-`dart doc` locally before publishing to preview it.
